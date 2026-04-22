@@ -14,6 +14,7 @@ export function useOfferHistory(initial: Offer[] = []) {
   }, [offers]);
 
   const addOffer = useCallback((o: Offer) => commit([...offers, o]), [offers, commit]);
+  const addOffers = useCallback((arr: Offer[]) => commit([...offers, ...arr]), [offers, commit]);
   const updateOffer = useCallback((id: string, patch: Partial<Offer>) =>
     commit(offers.map((o) => (o.id === id ? { ...o, ...patch } : o))), [offers, commit]);
   const removeOffer = useCallback((id: string) =>
@@ -37,6 +38,7 @@ export function useOfferHistory(initial: Offer[] = []) {
   return {
     offers,
     addOffer,
+    addOffers,
     updateOffer,
     removeOffer,
     clearAll,

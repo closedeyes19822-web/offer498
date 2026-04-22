@@ -9,11 +9,12 @@ import { VoiceOfferRecorder } from "@/components/VoiceOfferRecorder";
 import { OfferPreviewGrid } from "@/components/OfferPreviewGrid";
 import { OfferConfirmDialog } from "@/components/OfferConfirmDialog";
 import { OfferEditor } from "@/components/OfferEditor";
+import { AiOfferScanner } from "@/components/AiOfferScanner";
 import type { Language, Offer } from "@/types/offer";
 
 const Index = () => {
   const [language, setLanguage] = useState<Language>("ar");
-  const { offers, addOffer, updateOffer, removeOffer, clearAll, undo, redo } = useOfferHistory([]);
+  const { offers, addOffer, addOffers, updateOffer, removeOffer, clearAll, undo, redo } = useOfferHistory([]);
   const [pendingOffer, setPendingOffer] = useState<Offer | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -115,6 +116,8 @@ const Index = () => {
               onToggle={sr.toggle}
               onLanguageChange={setLanguage}
             />
+
+            <AiOfferScanner language={language} onOffersDetected={addOffers} />
 
             <div className="rounded-2xl border bg-card p-4 shadow-sm">
               <h3 className="font-bold mb-2">{language === "ar" ? "إحصائيات" : "Stats"}</h3>
