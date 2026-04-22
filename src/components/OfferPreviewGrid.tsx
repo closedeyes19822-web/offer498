@@ -1,12 +1,10 @@
 import type { Offer } from "@/types/offer";
 import { OfferCard } from "./OfferCard";
-import { cn } from "@/lib/utils";
 
 interface Props {
   offers: Offer[];
   selectedId?: string | null;
   onSelect?: (id: string) => void;
-  printMode?: boolean;
 }
 
 const SLOTS_PER_PAGE = 6;
@@ -18,11 +16,11 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-export function OfferPreviewGrid({ offers, selectedId, onSelect, printMode }: Props) {
+export function OfferPreviewGrid({ offers, selectedId, onSelect }: Props) {
   const pages = chunk(offers, SLOTS_PER_PAGE);
 
   return (
-    <div className={cn("flex flex-col items-center gap-6", !printMode && "py-4")}>
+    <div className="flex flex-col items-center gap-6 py-4">
       {pages.map((pageOffers, pIdx) => (
         <div key={pIdx} className="print-page-wrap">
           <div className="preview-grid">
