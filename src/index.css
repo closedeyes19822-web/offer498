@@ -99,7 +99,9 @@
 }
 .recording-pulse { animation: recording-pulse 1.4s ease-out infinite; }
 
-/* === Print rules: exactly 6 cards (3x2) per A4 portrait === */
+/* === Print rules: exactly 6 cards (3x2) per A4 portrait ===
+   Sheet: 21 × 29.7 cm | Margins: 1cm sides, 2cm top/bottom
+   Card: 6.5 × 12.5 cm | Col gap: 0.5cm | Row gap: 1.8cm */
 @media print {
   @page {
     size: A4 portrait;
@@ -124,28 +126,18 @@
     background: white !important;
   }
   .no-print { display: none !important; }
-  .print-page {
-    width: 21cm;
-    height: 29.7cm;
-    page-break-after: always;
-    break-after: page;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-  }
-  .print-page:last-child { page-break-after: auto; }
-  /* Force every preview-grid to render at exact print size */
   .preview-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, 6cm) !important;
-    grid-template-rows: repeat(2, 13cm) !important;
-    gap: 0.4cm !important;
+    grid-template-columns: repeat(3, 6.5cm) !important;
+    grid-template-rows: repeat(2, 12.5cm) !important;
+    column-gap: 0.5cm !important;
+    row-gap: 1.8cm !important;
     transform: none !important;
+    margin: 0 !important;
   }
   .preview-card {
-    width: 6cm !important;
-    height: 13cm !important;
+    width: 6.5cm !important;
+    height: 12.5cm !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     box-shadow: none !important;
@@ -159,22 +151,31 @@
     justify-content: center;
     width: 21cm;
     height: 29.7cm;
+    padding: 2cm 1cm !important;
+    box-sizing: border-box !important;
   }
   .print-page-wrap:last-child { page-break-after: auto; break-after: auto; }
 }
 
-/* Screen preview cards — exact 6cm × 13cm */
+/* Screen preview cards — exact 6.5cm × 12.5cm */
 .preview-card {
-  width: 6cm;
-  height: 13cm;
+  width: 6.5cm;
+  height: 12.5cm;
   box-shadow: var(--shadow-card);
 }
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(3, 6cm);
-  grid-template-rows: repeat(2, 13cm);
-  gap: 0.4cm;
+  grid-template-columns: repeat(3, 6.5cm);
+  grid-template-rows: repeat(2, 12.5cm);
+  column-gap: 0.5cm;
+  row-gap: 1.8cm;
 }
 @media (max-width: 900px) {
-  .preview-grid { transform: scale(0.55); transform-origin: top center; margin-bottom: -10cm; }
+  .preview-grid { transform: scale(0.5); transform-origin: top center; margin-bottom: -12cm; }
+}
+
+/* Selected card emphasis */
+.preview-card.is-selected {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 2px;
 }

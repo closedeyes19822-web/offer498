@@ -51,8 +51,8 @@ export function OfferCard({ offer, printMode, onClick, selected }: OfferCardProp
       )}
       dir="rtl"
     >
-      {/* Top empty area — 5cm — for product placement on shelf */}
-      <div className="relative bg-gradient-to-br from-muted/30 to-background" style={{ height: "5cm" }}>
+      {/* Top empty area — 4.5cm — for product placement on shelf */}
+      <div className="relative bg-gradient-to-br from-muted/30 to-background" style={{ height: "4.5cm" }}>
         {offer.image ? (
           <img src={offer.image} alt={offer.productName} className="w-full h-full object-contain p-2" />
         ) : (
