@@ -1,0 +1,246 @@
+import { useRef, useState } from "react";
+import { Camera, Upload, FileSpreadsheet, Loader2, ScanLine } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import * as XLSX from "xlsx";
+import type { Language, Offer, OfferType } from "@/types/offer";
+
+interface Props {
+  language: Language;
+  onOffersDetected: (offers: Offer[]) => void;
+}
+
+type DetectedOffer = {
+  productName: string;
+  offerType: OfferType;
+  quantity: number;
+  price: number;
+  discount: number;
+  text: string;
+};
+
+const t = (lang: Language, ar: string, en: string) => (lang === "ar" ? ar : en);
+
+export function AiOfferScanner({ language, onOffersDetected }: Props) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const excelRef = useRef<HTMLInputElement>(null);
+
+  const fileToDataUrl = (f: File) =>
+    new Promise<string>((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result as string);
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    });
+
+  const buildOffer = (d: Partial<DetectedOffer>): Offer => ({
+    id: crypto.randomUUID(),
+    productName: d.productName || "منتج",
+    offerType: (d.offerType as OfferType) || "custom",
+    quantity: Number(d.quantity) || 1,
+    price: Number(d.price) || 0,
+    discount: Number(d.discount) || 0,
+    text: d.text || "",
+    createdAt: Date.now(),
+  });
+
+  const handleImage = async (file: File) => {
+    setLoading(true);
+    try {
+      const imageBase64 = await fileToDataUrl(file);
+      const { data, error } = await supabase.functions.invoke("analyze-offer-image", {
+        body: { imageBase64 },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const offers: Offer[] = (data?.offers || []).map(buildOffer);
+      if (offers.length === 0) {
+        toast.error(t(language, "لم يتم اكتشاف عروض", "No offers detected"));
+        return;
+      }
+      onOffersDetected(offers);
+      toast.success(
+        t(language, `تم اكتشاف ${offers.length} عرض`, `${offers.length} offer(s) detected`)
+      );
+      setOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || t(language, "فشل التحليل", "Analysis failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExcel = async (file: File) => {
+    setLoading(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+      const norm = (s: string) => String(s || "").toLowerCase().trim();
+      const offers: Offer[] = rows
+        .map((row) => {
+          const keys = Object.keys(row);
+          const get = (...names: string[]) => {
+            for (const n of names) {
+              const k = keys.find((kk) => norm(kk) === norm(n));
+              if (k && row[k] !== "") return row[k];
+            }
+            return "";
+          };
+          const productName = String(
+            get("productName", "product", "اسم المنتج", "المنتج", "name") || ""
+          ).trim();
+          if (!productName) return null;
+          const rawType = norm(String(get("offerType", "type", "نوع العرض", "النوع")));
+          let offerType: OfferType = "custom";
+          if (["gift", "هدية"].includes(rawType)) offerType = "gift";
+          else if (["bundle", "عرض", "سعر"].includes(rawType)) offerType = "bundle";
+          else if (["discount", "خصم"].includes(rawType)) offerType = "discount";
+
+          const price = Number(get("price", "السعر", "سعر")) || 0;
+          const quantity = Number(get("quantity", "qty", "الكمية", "كمية")) || 1;
+          const discount = Number(get("discount", "الخصم", "نسبة الخصم")) || 0;
+          if (offerType === "custom") {
+            if (discount > 0) offerType = "discount";
+            else if (price > 0 && quantity > 1) offerType = "bundle";
+          }
+          const text = String(get("text", "نص العرض", "العرض") || "").trim();
+
+          return buildOffer({ productName, offerType, quantity, price, discount, text });
+        })
+        .filter(Boolean) as Offer[];
+
+      if (offers.length === 0) {
+        toast.error(
+          t(language, "لم يتم العثور على عروض في الملف", "No offers found in file")
+        );
+        return;
+      }
+      onOffersDetected(offers);
+      toast.success(
+        t(language, `تم استيراد ${offers.length} عرض`, `Imported ${offers.length} offer(s)`)
+      );
+      setOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || t(language, "فشل قراءة الملف", "Failed to read file"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>, kind: "image" | "excel") => {
+    const f = e.target.files?.[0];
+    e.target.value = "";
+    if (!f) return;
+    if (kind === "image") handleImage(f);
+    else handleExcel(f);
+  };
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full gap-2 h-11 font-bold"
+        onClick={() => setOpen(true)}
+      >
+        <ScanLine className="h-5 w-5 text-primary" />
+        {t(language, "كاميرا AI / استيراد", "AI Camera / Import")}
+      </Button>
+
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e, "image")} />
+      <input ref={galleryRef} type="file" accept="image/*" hidden onChange={(e) => onFile(e, "image")} />
+      <input ref={excelRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => onFile(e, "excel")} />
+
+      <Dialog open={open} onOpenChange={(o) => !loading && setOpen(o)}>
+        <DialogContent dir={language === "ar" ? "rtl" : "ltr"} className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ScanLine className="h-5 w-5 text-primary" />
+              {t(language, "اكتشاف العروض بالذكاء الاصطناعي", "AI Offer Detection")}
+            </DialogTitle>
+            <DialogDescription>
+              {t(
+                language,
+                "صوّر العرض، ارفع صورة، أو حمّل ملف Excel.",
+                "Snap a photo, upload an image, or import an Excel file."
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {loading ? (
+            <div className="py-10 flex flex-col items-center gap-3 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm font-medium">
+                {t(language, "جاري التحليل بالذكاء الاصطناعي...", "Analyzing with AI...")}
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 py-2">
+              <Button
+                size="lg"
+                className="h-16 justify-start gap-3 text-primary-foreground"
+                style={{ background: "var(--gradient-primary)" }}
+                onClick={() => cameraRef.current?.click()}
+              >
+                <Camera className="h-6 w-6" />
+                <div className="text-start">
+                  <div className="font-bold">
+                    {t(language, "التقط بالكاميرا", "Take Photo")}
+                  </div>
+                  <div className="text-xs opacity-90">
+                    {t(language, "صوّر إعلان أو منتج", "Snap an ad or product")}
+                  </div>
+                </div>
+              </Button>
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-16 justify-start gap-3"
+                onClick={() => galleryRef.current?.click()}
+              >
+                <Upload className="h-6 w-6 text-[hsl(var(--info))]" />
+                <div className="text-start">
+                  <div className="font-bold">
+                    {t(language, "رفع صورة", "Upload Image")}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {t(language, "من المعرض", "From gallery")}
+                  </div>
+                </div>
+              </Button>
+
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-16 justify-start gap-3"
+                onClick={() => excelRef.current?.click()}
+              >
+                <FileSpreadsheet className="h-6 w-6 text-[hsl(var(--success))]" />
+                <div className="text-start">
+                  <div className="font-bold">
+                    {t(language, "تحليل ملف Excel", "Analyze Excel")}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {t(language, "أعمدة: المنتج, السعر, النوع...", "Columns: product, price, type...")}
+                  </div>
+                </div>
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
