@@ -135,24 +135,35 @@
     padding: 0;
   }
   .print-page:last-child { page-break-after: auto; }
-  .print-grid {
+  /* Force every preview-grid to render at exact print size */
+  .preview-grid {
     display: grid !important;
     grid-template-columns: repeat(3, 6cm) !important;
     grid-template-rows: repeat(2, 13cm) !important;
     gap: 0.4cm !important;
-    width: auto !important;
-    height: auto !important;
+    transform: none !important;
   }
-  .print-card {
+  .preview-card {
     width: 6cm !important;
     height: 13cm !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     box-shadow: none !important;
+    border-color: hsl(var(--border)) !important;
   }
+  .print-page-wrap {
+    page-break-after: always;
+    break-after: page;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 21cm;
+    height: 29.7cm;
+  }
+  .print-page-wrap:last-child { page-break-after: auto; break-after: auto; }
 }
 
-/* Screen preview: scaled-down version of the actual card */
+/* Screen preview cards — exact 6cm × 13cm */
 .preview-card {
   width: 6cm;
   height: 13cm;
@@ -165,5 +176,5 @@
   gap: 0.4cm;
 }
 @media (max-width: 900px) {
-  .preview-grid { transform: scale(0.55); transform-origin: top center; }
+  .preview-grid { transform: scale(0.55); transform-origin: top center; margin-bottom: -10cm; }
 }

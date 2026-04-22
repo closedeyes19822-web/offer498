@@ -24,12 +24,11 @@ export function OfferPreviewGrid({ offers, selectedId, onSelect, printMode }: Pr
   return (
     <div className={cn("flex flex-col items-center gap-6", !printMode && "py-4")}>
       {pages.map((pageOffers, pIdx) => (
-        <div key={pIdx} className={cn(printMode ? "print-page" : "")}>
-          <div className={printMode ? "print-grid" : "preview-grid"}>
+        <div key={pIdx} className="print-page-wrap">
+          <div className="preview-grid">
             {Array.from({ length: SLOTS_PER_PAGE }).map((_, i) => {
               const offer = pageOffers[i];
               if (!offer) {
-                if (printMode) return <div key={i} />;
                 return (
                   <div
                     key={i}
@@ -43,9 +42,8 @@ export function OfferPreviewGrid({ offers, selectedId, onSelect, printMode }: Pr
                 <OfferCard
                   key={offer.id}
                   offer={offer}
-                  printMode={printMode}
-                  selected={!printMode && selectedId === offer.id}
-                  onClick={!printMode ? () => onSelect?.(offer.id) : undefined}
+                  selected={selectedId === offer.id}
+                  onClick={() => onSelect?.(offer.id)}
                 />
               );
             })}

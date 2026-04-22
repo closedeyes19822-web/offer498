@@ -168,10 +168,6 @@ const Index = () => {
                 selectedId={selectedId}
                 onSelect={(id) => { setSelectedId(id); setEditingId(id); }}
               />
-              {/* Hidden duplicate strictly for print (in case screen scaling interferes) */}
-              <div className="hidden">
-                <OfferPreviewGrid offers={offers} printMode />
-              </div>
             </div>
           </section>
         </div>
