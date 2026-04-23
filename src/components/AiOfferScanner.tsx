@@ -278,6 +278,58 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
                   </div>
                 </div>
               </Button>
+
+              {/* Mic / voice */}
+              <div className="rounded-md border-2 border-dashed border-primary/40 p-3 space-y-2 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="lg"
+                    type="button"
+                    variant={speech.listening ? "destructive" : "default"}
+                    className="h-12 flex-1 gap-2"
+                    disabled={!speech.supported}
+                    onClick={speech.toggle}
+                  >
+                    {speech.listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                    {speech.listening
+                      ? t(language, "إيقاف الاستماع", "Stop Listening")
+                      : t(language, "تحدث بالعرض", "Speak Offer")}
+                  </Button>
+                  <Button
+                    size="lg"
+                    type="button"
+                    variant="secondary"
+                    className="h-12"
+                    disabled={!transcript.trim()}
+                    onClick={() => analyzeTranscript(transcript)}
+                  >
+                    {t(language, "تحليل", "Analyze")}
+                  </Button>
+                </div>
+                {!speech.supported && (
+                  <p className="text-[11px] text-destructive">
+                    {t(language, "المتصفح لا يدعم التعرف على الصوت", "Speech recognition not supported")}
+                  </p>
+                )}
+                <textarea
+                  value={transcript + (speech.interim ? " " + speech.interim : "")}
+                  onChange={(e) => setTranscript(e.target.value)}
+                  dir={language === "ar" ? "rtl" : "ltr"}
+                  placeholder={t(
+                    language,
+                    'مثال: "خصم 25% على الحبة الأولى من شامبو هيد آند شولدرز" أو "الحبتين عليهم حبة"',
+                    'e.g. "25% off first piece of shampoo" or "buy 2 get 1 free"'
+                  )}
+                  className="w-full min-h-[60px] text-sm rounded-md border border-input bg-background p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {t(
+                    language,
+                    "يدعم: خصم 5–95% على الحبة الأولى/الثانية، الحبة على حبة، الحبتين عليهم حبة، 3+1، 4+1، 2+2",
+                    "Supports: 5–95% off first/second piece, 1+1, 2+1, 3+1, 4+1, 2+2"
+                  )}
+                </p>
+              </div>
             </div>
           )}
         </DialogContent>
