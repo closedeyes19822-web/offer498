@@ -1,5 +1,6 @@
 import type { Offer } from "@/types/offer";
 import { OfferCard } from "./OfferCard";
+import { usePreviewScale } from "@/hooks/usePreviewScale";
 
 interface Props {
   offers: Offer[];
@@ -18,11 +19,12 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 export function OfferPreviewGrid({ offers, selectedId, onSelect }: Props) {
   const pages = chunk(offers, SLOTS_PER_PAGE);
+  const scale = usePreviewScale();
 
   return (
     <div className="flex flex-col items-center gap-6 py-4">
       {pages.map((pageOffers, pIdx) => (
-        <div key={pIdx} className="print-page-wrap">
+        <div key={pIdx} className="print-page-wrap preview-scale-wrap" style={{ ["--preview-scale" as any]: scale }}>
           <div className="preview-grid">
             {Array.from({ length: SLOTS_PER_PAGE }).map((_, i) => {
               const offer = pageOffers[i];
