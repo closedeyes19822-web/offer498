@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
-import { Camera, Upload, FileSpreadsheet, Loader2, ScanLine } from "lucide-react";
+import { Camera, Upload, FileSpreadsheet, Loader2, ScanLine, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import type { Language, Offer, OfferType } from "@/types/offer";
 
 interface Props {
@@ -16,6 +17,8 @@ type DetectedOffer = {
   productName: string;
   offerType: OfferType;
   quantity: number;
+  buyQty?: number;
+  getQty?: number;
   price: number;
   discount: number;
   text: string;
@@ -26,9 +29,45 @@ const t = (lang: Language, ar: string, en: string) => (lang === "ar" ? ar : en);
 export function AiOfferScanner({ language, onOffersDetected }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const excelRef = useRef<HTMLInputElement>(null);
+
+  const analyzeTranscript = async (text: string) => {
+    if (!text.trim()) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-offer-image", {
+        body: { transcript: text },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const offers: Offer[] = (data?.offers || []).map(buildOffer);
+      if (offers.length === 0) {
+        toast.error(t(language, "لم يتم اكتشاف عروض", "No offers detected"));
+        return;
+      }
+      onOffersDetected(offers);
+      toast.success(
+        t(language, `تم اكتشاف ${offers.length} عرض`, `${offers.length} offer(s) detected`)
+      );
+      setTranscript("");
+      setOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || t(language, "فشل التحليل", "Analysis failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const speech = useSpeechRecognition({
+    lang: language === "ar" ? "ar-SA" : "en-US",
+    onFinal: (text) => {
+      setTranscript((prev) => (prev ? prev + " " + text : text));
+    },
+  });
 
   const fileToDataUrl = (f: File) =>
     new Promise<string>((res, rej) => {
@@ -43,6 +82,8 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
     productName: d.productName || "منتج",
     offerType: (d.offerType as OfferType) || "custom",
     quantity: Number(d.quantity) || 1,
+    buyQty: d.buyQty ? Number(d.buyQty) : undefined,
+    getQty: d.getQty ? Number(d.getQty) : undefined,
     price: Number(d.price) || 0,
     discount: Number(d.discount) || 0,
     text: d.text || "",
@@ -104,18 +145,25 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
           let offerType: OfferType = "custom";
           if (["gift", "هدية"].includes(rawType)) offerType = "gift";
           else if (["bundle", "عرض", "سعر"].includes(rawType)) offerType = "bundle";
+          else if (["first_piece_discount", "first piece", "الحبة الأولى", "حبة اولى", "خصم حبة اولى"].some((s) => rawType.includes(norm(s))))
+            offerType = "first_piece_discount";
+          else if (["second_piece_discount", "second piece", "الحبة الثانية", "حبة ثانية", "خصم حبة ثانية"].some((s) => rawType.includes(norm(s))))
+            offerType = "second_piece_discount";
           else if (["discount", "خصم"].includes(rawType)) offerType = "discount";
 
           const price = Number(get("price", "السعر", "سعر")) || 0;
           const quantity = Number(get("quantity", "qty", "الكمية", "كمية")) || 1;
           const discount = Number(get("discount", "الخصم", "نسبة الخصم")) || 0;
+          const buyQty = Number(get("buyQty", "buy", "اشتري", "اشترِ")) || undefined;
+          const getQty = Number(get("getQty", "get", "مجاناً", "مجانا", "هدية كمية")) || undefined;
           if (offerType === "custom") {
             if (discount > 0) offerType = "discount";
+            else if (buyQty && getQty) offerType = "bundle";
             else if (price > 0 && quantity > 1) offerType = "bundle";
           }
           const text = String(get("text", "نص العرض", "العرض") || "").trim();
 
-          return buildOffer({ productName, offerType, quantity, price, discount, text });
+          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text });
         })
         .filter(Boolean) as Offer[];
 
@@ -237,6 +285,58 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
                   </div>
                 </div>
               </Button>
+
+              {/* Mic / voice */}
+              <div className="rounded-md border-2 border-dashed border-primary/40 p-3 space-y-2 bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="lg"
+                    type="button"
+                    variant={speech.listening ? "destructive" : "default"}
+                    className="h-12 flex-1 gap-2"
+                    disabled={!speech.supported}
+                    onClick={speech.toggle}
+                  >
+                    {speech.listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                    {speech.listening
+                      ? t(language, "إيقاف الاستماع", "Stop Listening")
+                      : t(language, "تحدث بالعرض", "Speak Offer")}
+                  </Button>
+                  <Button
+                    size="lg"
+                    type="button"
+                    variant="secondary"
+                    className="h-12"
+                    disabled={!transcript.trim()}
+                    onClick={() => analyzeTranscript(transcript)}
+                  >
+                    {t(language, "تحليل", "Analyze")}
+                  </Button>
+                </div>
+                {!speech.supported && (
+                  <p className="text-[11px] text-destructive">
+                    {t(language, "المتصفح لا يدعم التعرف على الصوت", "Speech recognition not supported")}
+                  </p>
+                )}
+                <textarea
+                  value={transcript + (speech.interim ? " " + speech.interim : "")}
+                  onChange={(e) => setTranscript(e.target.value)}
+                  dir={language === "ar" ? "rtl" : "ltr"}
+                  placeholder={t(
+                    language,
+                    'مثال: "خصم 25% على الحبة الأولى من شامبو هيد آند شولدرز" أو "الحبتين عليهم حبة"',
+                    'e.g. "25% off first piece of shampoo" or "buy 2 get 1 free"'
+                  )}
+                  className="w-full min-h-[60px] text-sm rounded-md border border-input bg-background p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {t(
+                    language,
+                    "يدعم: خصم 5–95% على الحبة الأولى/الثانية، الحبة على حبة، الحبتين عليهم حبة، 3+1، 4+1، 2+2",
+                    "Supports: 5–95% off first/second piece, 1+1, 2+1, 3+1, 4+1, 2+2"
+                  )}
+                </p>
+              </div>
             </div>
           )}
         </DialogContent>
