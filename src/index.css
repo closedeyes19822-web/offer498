@@ -170,8 +170,37 @@
   column-gap: 0.5cm;
   row-gap: 1.8cm;
 }
+/* Mobile-friendly preview: scale page down to fit viewport width */
+.preview-scale-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+.preview-scale-wrap > .preview-grid {
+  transform-origin: top right;
+}
+[dir="ltr"] .preview-scale-wrap > .preview-grid {
+  transform-origin: top left;
+}
 @media (max-width: 900px) {
-  .preview-grid { transform: scale(0.5); transform-origin: top center; margin-bottom: -12cm; }
+  .preview-scale-wrap > .preview-grid {
+    /* 21cm sheet fits inside (100vw - padding); scale ~ available/21cm */
+    transform: scale(var(--preview-scale, 0.42));
+  }
+  .preview-scale-wrap {
+    /* compensate scaled height so layout doesn't leave huge gap */
+    height: calc(28cm * var(--preview-scale, 0.42));
+  }
+}
+
+/* PWA safe-area + mobile container */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+@media (max-width: 640px) {
+  .container { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
 }
 
 /* Selected card emphasis */
