@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
-import { Camera, Upload, FileSpreadsheet, Loader2, ScanLine } from "lucide-react";
+import { Camera, Upload, FileSpreadsheet, Loader2, ScanLine, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import type { Language, Offer, OfferType } from "@/types/offer";
 
 interface Props {
@@ -16,6 +17,8 @@ type DetectedOffer = {
   productName: string;
   offerType: OfferType;
   quantity: number;
+  buyQty?: number;
+  getQty?: number;
   price: number;
   discount: number;
   text: string;
@@ -43,6 +46,8 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
     productName: d.productName || "منتج",
     offerType: (d.offerType as OfferType) || "custom",
     quantity: Number(d.quantity) || 1,
+    buyQty: d.buyQty ? Number(d.buyQty) : undefined,
+    getQty: d.getQty ? Number(d.getQty) : undefined,
     price: Number(d.price) || 0,
     discount: Number(d.discount) || 0,
     text: d.text || "",
