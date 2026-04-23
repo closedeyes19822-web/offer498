@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Trash2, Printer, Sparkles } from "lucide-react";
+import { Undo2, Redo2, Trash2, Printer, Sparkles, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useOfferHistory } from "@/hooks/useOfferHistory";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -88,6 +89,9 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+            <Button asChild variant="outline" size="sm" className="gap-1">
+              <Link to="/bw"><FileText className="h-4 w-4" /> <span className="hidden sm:inline">أبيض/أسود</span></Link>
+            </Button>
             <Button variant="outline" size="sm" onClick={undo} className="gap-1">
               <Undo2 className="h-4 w-4" /> <span className="hidden sm:inline">تراجع</span>
             </Button>
