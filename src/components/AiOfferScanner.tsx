@@ -145,18 +145,25 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
           let offerType: OfferType = "custom";
           if (["gift", "هدية"].includes(rawType)) offerType = "gift";
           else if (["bundle", "عرض", "سعر"].includes(rawType)) offerType = "bundle";
+          else if (["first_piece_discount", "first piece", "الحبة الأولى", "حبة اولى", "خصم حبة اولى"].some((s) => rawType.includes(norm(s))))
+            offerType = "first_piece_discount";
+          else if (["second_piece_discount", "second piece", "الحبة الثانية", "حبة ثانية", "خصم حبة ثانية"].some((s) => rawType.includes(norm(s))))
+            offerType = "second_piece_discount";
           else if (["discount", "خصم"].includes(rawType)) offerType = "discount";
 
           const price = Number(get("price", "السعر", "سعر")) || 0;
           const quantity = Number(get("quantity", "qty", "الكمية", "كمية")) || 1;
           const discount = Number(get("discount", "الخصم", "نسبة الخصم")) || 0;
+          const buyQty = Number(get("buyQty", "buy", "اشتري", "اشترِ")) || undefined;
+          const getQty = Number(get("getQty", "get", "مجاناً", "مجانا", "هدية كمية")) || undefined;
           if (offerType === "custom") {
             if (discount > 0) offerType = "discount";
+            else if (buyQty && getQty) offerType = "bundle";
             else if (price > 0 && quantity > 1) offerType = "bundle";
           }
           const text = String(get("text", "نص العرض", "العرض") || "").trim();
 
-          return buildOffer({ productName, offerType, quantity, price, discount, text });
+          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text });
         })
         .filter(Boolean) as Offer[];
 
