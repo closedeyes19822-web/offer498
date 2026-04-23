@@ -5,17 +5,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `أنت مساعد ذكي متخصص في استخراج عروض المتاجر من الصور.
-حلل الصورة المرفقة (قد تكون صورة منتج، إعلان، فاتورة، أو لوحة أسعار) واستخرج كل العروض المرئية.
-لكل عرض أعد:
-- productName: اسم المنتج (نص قصير، بالعربية إن أمكن)
-- offerType: واحد من: "gift" (هدية), "bundle" (عرض سعر مجموعة), "discount" (خصم نسبة), "custom"
-- quantity: عدد القطع في العرض (رقم صحيح، افتراضي 1)
-- price: السعر بالأرقام (0 إن لم يوجد)
-- discount: نسبة الخصم 0-100 (0 إن لم توجد)
-- text: نص العرض القصير المعروض على البطاقة
+const SYSTEM_PROMPT = `أنت مساعد ذكي متخصص في استخراج عروض المتاجر من الصور أو من نص منطوق (صوت).
+حلل المدخل (صورة منتج/إعلان/فاتورة/لوحة أسعار، أو نص مكتوب من تعرف الكلام) واستخرج كل العروض.
 
-أعد قائمة عروض حتى لو كان عرض واحد فقط.`;
+لكل عرض أعد الحقول:
+- productName: اسم المنتج (نص قصير بالعربية إن أمكن، وإلا "منتج")
+- offerType: واحد من:
+    * "first_piece_discount"  (خصم على الحبة الأولى، مثال: "خصم 25% على الحبة الأولى")
+    * "second_piece_discount" (خصم على الحبة الثانية، مثال: "خصم 50% على الحبة الثانية" / "نص الثمن على الثانية")
+    * "bundle"   (عرض شراء كمية والحصول على كمية مجانية: "الحبة على حبة" 1+1، "الحبتين عليهم حبة" 2+1، "الثلاث حبات عليهم حبة" 3+1، "الأربع حبات عليهم حبة" 4+1، "الحبتين عليهم حبتين" 2+2)
+    * "gift"     (هدية عامة بدون كمية واضحة)
+    * "discount" (خصم عام على المنتج)
+    * "custom"   (غير ذلك)
+- quantity: عدد القطع المطلوب شراؤها (افتراضي 1)
+- buyQty: لعروض الباندل، عدد القطع المشتراة (مثال 2 في 2+1)
+- getQty: لعروض الباندل، عدد القطع المجانية (مثال 1 في 2+1)
+- price: السعر إن ذُكر (0 إن لم يذكر)
+- discount: نسبة الخصم 0-100 (للخصم على الحبة الأولى/الثانية أو الخصم العام)
+- text: نص العرض القصير المعروض على البطاقة بالعربية الواضحة (مثل "خصم 25% على الحبة الأولى" أو "اشترِ 2 واحصل على 1 مجاناً")
+
+تعرّف على كل النسب من 5% إلى 95% (بفواصل 5) لكل من الحبة الأولى والثانية.
+يعمل بالعربية والإنجليزية. أعد دائماً قائمة "offers" حتى لو عرض واحد.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -23,13 +33,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { imageBase64 } = await req.json();
-    if (!imageBase64) {
-      return new Response(JSON.stringify({ error: "imageBase64 required" }), {
+    const { imageBase64, transcript } = await req.json();
+    if (!imageBase64 && !transcript) {
+      return new Response(JSON.stringify({ error: "imageBase64 or transcript required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userContent: any = transcript
+      ? `استخرج كل العروض من النص التالي المنطوق:\n"""${transcript}"""`
+      : [
+          { type: "text", text: "استخرج كل العروض من هذه الصورة." },
+          { type: "image_url", image_url: { url: imageBase64 } },
+        ];
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
