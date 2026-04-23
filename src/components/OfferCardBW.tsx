@@ -15,9 +15,15 @@ function buildArabicOffer(offer: Offer): string {
   switch (offer.offerType) {
     case "discount":
       return `خصم ${offer.discount}٪ على ${offer.productName}`;
+    case "first_piece_discount":
+      return `خصم ${offer.discount}٪ على الحبة الأولى من ${offer.productName}`;
+    case "second_piece_discount":
+      return `خصم ${offer.discount}٪ على الحبة الثانية من ${offer.productName}`;
     case "gift":
       return `عند شراء ${offer.quantity > 1 ? offer.quantity : 1} من ${offer.productName} تحصل على 1 مجاناً`;
     case "bundle":
+      if (offer.buyQty && offer.getQty)
+        return `عند شراء ${offer.buyQty} من ${offer.productName} تحصل على ${offer.getQty} مجاناً`;
       return `${offer.quantity > 1 ? offer.quantity + " حبات" : "حبة واحدة"} من ${offer.productName} بسعر ${offer.price} ريال`;
     default:
       return offer.text || `عرض خاص على ${offer.productName}`;
@@ -105,11 +111,30 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
               {offer.discount}<span style={{ fontSize: "18px" }}>٪</span>
               <div className="text-[10px] font-bold mt-1">خصم</div>
             </div>
-          ) : offer.offerType === "bundle" && offer.price > 0 ? (
-            <div className="font-black leading-none" style={{ fontSize: "26px" }}>
-              {offer.price}<span style={{ fontSize: "12px" }}> ر.س</span>
-              <div className="text-[10px] font-bold mt-1">{offer.quantity > 1 ? `${offer.quantity} حبات` : "حبة"}</div>
+          ) : offer.offerType === "first_piece_discount" ? (
+            <div className="font-black leading-none" style={{ fontSize: "30px" }}>
+              {offer.discount}<span style={{ fontSize: "16px" }}>٪</span>
+              <div className="text-[10px] font-bold mt-1">على الحبة الأولى</div>
             </div>
+          ) : offer.offerType === "second_piece_discount" ? (
+            <div className="font-black leading-none" style={{ fontSize: "30px" }}>
+              {offer.discount}<span style={{ fontSize: "16px" }}>٪</span>
+              <div className="text-[10px] font-bold mt-1">على الحبة الثانية</div>
+            </div>
+          ) : offer.offerType === "bundle" ? (
+            offer.buyQty && offer.getQty ? (
+              <div className="font-black leading-none" style={{ fontSize: "26px" }}>
+                {offer.buyQty}+{offer.getQty}
+                <div className="text-[10px] font-bold mt-1">اشترِ {offer.buyQty} واحصل على {offer.getQty}</div>
+              </div>
+            ) : offer.price > 0 ? (
+              <div className="font-black leading-none" style={{ fontSize: "26px" }}>
+                {offer.price}<span style={{ fontSize: "12px" }}> ر.س</span>
+                <div className="text-[10px] font-bold mt-1">{offer.quantity > 1 ? `${offer.quantity} حبات` : "حبة"}</div>
+              </div>
+            ) : (
+              <div className="font-bold text-xs">{offer.text || "عرض خاص"}</div>
+            )
           ) : offer.offerType === "gift" ? (
             <div className="font-black leading-none" style={{ fontSize: "20px" }}>
               {offer.quantity > 1 ? `${offer.quantity}+1` : "1+1"}

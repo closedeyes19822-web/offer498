@@ -10,10 +10,12 @@ interface OfferCardProps {
 }
 
 const typeStyles: Record<Offer["offerType"], { band: string; accent: string; label: string }> = {
-  gift:     { band: "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]", accent: "text-[hsl(var(--success))]", label: "هدية مجانية" },
-  discount: { band: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))]", accent: "text-[hsl(var(--destructive))]", label: "خصم خاص" },
-  bundle:   { band: "bg-[hsl(var(--info))] text-[hsl(var(--info-foreground))]", accent: "text-[hsl(var(--info))]", label: "عرض السعر" },
-  custom:   { band: "bg-primary text-primary-foreground", accent: "text-primary", label: "عرض" },
+  gift:                   { band: "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]", accent: "text-[hsl(var(--success))]", label: "هدية مجانية" },
+  discount:               { band: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))]", accent: "text-[hsl(var(--destructive))]", label: "خصم خاص" },
+  first_piece_discount:   { band: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))]", accent: "text-[hsl(var(--destructive))]", label: "خصم على الحبة الأولى" },
+  second_piece_discount:  { band: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))]", accent: "text-[hsl(var(--destructive))]", label: "خصم على الحبة الثانية" },
+  bundle:                 { band: "bg-[hsl(var(--info))] text-[hsl(var(--info-foreground))]", accent: "text-[hsl(var(--info))]", label: "عرض السعر" },
+  custom:                 { band: "bg-primary text-primary-foreground", accent: "text-primary", label: "عرض" },
 };
 
 /** Auto-shrinks text to fit container height. */
@@ -97,19 +99,42 @@ export function OfferCard({ offer, printMode, onClick, selected }: OfferCardProp
                 {offer.discount}<span style={{ fontSize: "24px" }}>%</span>
               </div>
             </>
+          ) : offer.offerType === "first_piece_discount" ? (
+            <>
+              <div className="text-[10px] font-bold opacity-90">خصم على الحبة الأولى</div>
+              <div className="font-black leading-none" style={{ fontSize: "44px" }}>
+                {offer.discount}<span style={{ fontSize: "22px" }}>%</span>
+              </div>
+            </>
+          ) : offer.offerType === "second_piece_discount" ? (
+            <>
+              <div className="text-[10px] font-bold opacity-90">خصم على الحبة الثانية</div>
+              <div className="font-black leading-none" style={{ fontSize: "44px" }}>
+                {offer.discount}<span style={{ fontSize: "22px" }}>%</span>
+              </div>
+            </>
           ) : offer.offerType === "gift" ? (
             <>
               <div className="text-[11px] font-bold opacity-90">{offer.quantity > 1 ? `${offer.quantity} +` : "1 +"}</div>
               <div className="font-black leading-none" style={{ fontSize: "32px" }}>1 مجاناً</div>
             </>
-          ) : offer.offerType === "bundle" && offer.price > 0 ? (
-            <>
-              <div className="text-[11px] font-bold opacity-90">{offer.quantity > 1 ? `${offer.quantity} حبات` : "حبة واحدة"} بـ</div>
-              <div className="font-black leading-none flex items-baseline gap-1" style={{ fontSize: "44px" }}>
-                {offer.price}
-                <span style={{ fontSize: "16px" }}>ر.س</span>
-              </div>
-            </>
+          ) : offer.offerType === "bundle" ? (
+            offer.buyQty && offer.getQty ? (
+              <>
+                <div className="text-[11px] font-bold opacity-90">اشترِ {offer.buyQty} واحصل على</div>
+                <div className="font-black leading-none" style={{ fontSize: "32px" }}>{offer.getQty} مجاناً</div>
+              </>
+            ) : offer.price > 0 ? (
+              <>
+                <div className="text-[11px] font-bold opacity-90">{offer.quantity > 1 ? `${offer.quantity} حبات` : "حبة واحدة"} بـ</div>
+                <div className="font-black leading-none flex items-baseline gap-1" style={{ fontSize: "44px" }}>
+                  {offer.price}
+                  <span style={{ fontSize: "16px" }}>ر.س</span>
+                </div>
+              </>
+            ) : (
+              <div className="font-bold text-sm px-2 text-center">{offer.text || "عرض خاص"}</div>
+            )
           ) : (
             <div className="font-bold text-sm px-2 text-center">{offer.text || "عرض خاص"}</div>
           )}
