@@ -29,9 +29,45 @@ const t = (lang: Language, ar: string, en: string) => (lang === "ar" ? ar : en);
 export function AiOfferScanner({ language, onOffersDetected }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [transcript, setTranscript] = useState("");
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const excelRef = useRef<HTMLInputElement>(null);
+
+  const analyzeTranscript = async (text: string) => {
+    if (!text.trim()) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-offer-image", {
+        body: { transcript: text },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const offers: Offer[] = (data?.offers || []).map(buildOffer);
+      if (offers.length === 0) {
+        toast.error(t(language, "لم يتم اكتشاف عروض", "No offers detected"));
+        return;
+      }
+      onOffersDetected(offers);
+      toast.success(
+        t(language, `تم اكتشاف ${offers.length} عرض`, `${offers.length} offer(s) detected`)
+      );
+      setTranscript("");
+      setOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || t(language, "فشل التحليل", "Analysis failed"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const speech = useSpeechRecognition({
+    lang: language === "ar" ? "ar-SA" : "en-US",
+    onFinal: (text) => {
+      setTranscript((prev) => (prev ? prev + " " + text : text));
+    },
+  });
 
   const fileToDataUrl = (f: File) =>
     new Promise<string>((res, rej) => {
