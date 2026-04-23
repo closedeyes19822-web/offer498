@@ -63,13 +63,7 @@ Deno.serve(async (req) => {
           model: "google/gemini-2.5-flash",
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
-            {
-              role: "user",
-              content: [
-                { type: "text", text: "استخرج كل العروض من هذه الصورة." },
-                { type: "image_url", image_url: { url: imageBase64 } },
-              ],
-            },
+            { role: "user", content: userContent },
           ],
           tools: [
             {
@@ -88,9 +82,18 @@ Deno.serve(async (req) => {
                           productName: { type: "string" },
                           offerType: {
                             type: "string",
-                            enum: ["gift", "bundle", "discount", "custom"],
+                            enum: [
+                              "gift",
+                              "bundle",
+                              "discount",
+                              "first_piece_discount",
+                              "second_piece_discount",
+                              "custom",
+                            ],
                           },
                           quantity: { type: "number" },
+                          buyQty: { type: "number", description: "Bundle: pieces to buy (e.g. 2 in 2+1)" },
+                          getQty: { type: "number", description: "Bundle: pieces free (e.g. 1 in 2+1)" },
                           price: { type: "number" },
                           discount: { type: "number" },
                           text: { type: "string" },
