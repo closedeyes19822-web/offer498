@@ -20,8 +20,23 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+/** Remove duplicate product names within the SAME page (sheet). */
+function dedupeAcrossPages(offers: Offer[], slotsPerPage: number): Offer[] {
+  const result: Offer[] = [];
+  let pageSeen = new Set<string>();
+  for (const o of offers) {
+    const key = (o.productName || "").trim().toLowerCase().replace(/\s+/g, " ");
+    if (key && pageSeen.has(key)) continue; // skip duplicate on same page
+    result.push(o);
+    pageSeen.add(key);
+    if (result.length % slotsPerPage === 0) pageSeen = new Set<string>();
+  }
+  return result;
+}
+
 export function OfferPreviewGridBW({ offers, startDate, endDate, itemCode, selectedId, onSelect }: Props) {
-  const pages = chunk(offers, SLOTS_PER_PAGE);
+  const deduped = dedupeAcrossPages(offers, SLOTS_PER_PAGE);
+  const pages = chunk(deduped, SLOTS_PER_PAGE);
   const scale = usePreviewScale();
 
   return (
