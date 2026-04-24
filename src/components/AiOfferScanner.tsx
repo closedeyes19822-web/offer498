@@ -22,6 +22,7 @@ type DetectedOffer = {
   price: number;
   discount: number;
   text: string;
+  itemCode?: string;
 };
 
 const t = (lang: Language, ar: string, en: string) => (lang === "ar" ? ar : en);
@@ -87,6 +88,7 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
     price: Number(d.price) || 0,
     discount: Number(d.discount) || 0,
     text: d.text || "",
+    itemCode: d.itemCode ? String(d.itemCode).trim() : undefined,
     createdAt: Date.now(),
   });
 
@@ -173,7 +175,17 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
           }
           const text = String(get("text", "نص العرض", "العرض") || "").trim();
 
-          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text });
+          // Extract 6-digit item code from "Item Number" / "Item Code" / "كود الصنف"
+          const rawCode = String(
+            get(
+              "itemCode", "item code", "item number", "itemnumber", "item no", "item#",
+              "كود الصنف", "كود", "رقم الصنف", "code", "sku"
+            ) || ""
+          );
+          const codeMatch = rawCode.match(/\d{6}/);
+          const itemCode = codeMatch ? codeMatch[0] : (rawCode.trim() || undefined);
+
+          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text, itemCode });
         })
         .filter(Boolean) as Offer[];
 
