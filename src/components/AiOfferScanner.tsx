@@ -127,6 +127,7 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
       const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
       const norm = (s: string) => String(s || "").toLowerCase().trim();
+      const seen = new Set<string>();
       const offers: Offer[] = rows
         .map((row) => {
           const keys = Object.keys(row);
@@ -137,10 +138,19 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
             }
             return "";
           };
+          // Supports both offer sheets and SAP inventory exports
+          // (Plant | Item Number | Description | Quantity)
           const productName = String(
-            get("productName", "product", "اسم المنتج", "المنتج", "name") || ""
+            get(
+              "productName", "product", "اسم المنتج", "المنتج", "name",
+              "description", "desc", "الوصف", "البيان", "اسم الصنف"
+            ) || ""
           ).trim();
           if (!productName) return null;
+          // Skip duplicate product names within the same import
+          const dedupKey = productName.toLowerCase().replace(/\s+/g, " ");
+          if (seen.has(dedupKey)) return null;
+          seen.add(dedupKey);
           const rawType = norm(String(get("offerType", "type", "نوع العرض", "النوع")));
           let offerType: OfferType = "custom";
           if (["gift", "هدية"].includes(rawType)) offerType = "gift";
