@@ -10,23 +10,23 @@ interface OfferCardBWProps {
   selected?: boolean;
 }
 
-/** Build a detailed Arabic description of the offer. */
+/** Build a detailed Arabic description of the offer — WITHOUT repeating the product name. */
 function buildArabicOffer(offer: Offer): string {
   switch (offer.offerType) {
     case "discount":
-      return `خصم ${offer.discount}٪ على ${offer.productName}`;
+      return `خصم ${offer.discount}٪`;
     case "first_piece_discount":
-      return `خصم ${offer.discount}٪ على الحبة الأولى من ${offer.productName}`;
+      return `خصم ${offer.discount}٪ على الحبة الأولى`;
     case "second_piece_discount":
-      return `خصم ${offer.discount}٪ على الحبة الثانية من ${offer.productName}`;
+      return `خصم ${offer.discount}٪ على الحبة الثانية`;
     case "gift":
-      return `عند شراء ${offer.quantity > 1 ? offer.quantity : 1} من ${offer.productName} تحصل على 1 مجاناً`;
+      return `عند شراء ${offer.quantity > 1 ? offer.quantity : 1} تحصل على 1 مجاناً`;
     case "bundle":
       if (offer.buyQty && offer.getQty)
-        return `عند شراء ${offer.buyQty} من ${offer.productName} تحصل على ${offer.getQty} مجاناً`;
-      return `${offer.quantity > 1 ? offer.quantity + " حبات" : "حبة واحدة"} من ${offer.productName} بسعر ${offer.price} ريال`;
+        return `عند شراء ${offer.buyQty} تحصل على ${offer.getQty} مجاناً`;
+      return `${offer.quantity > 1 ? offer.quantity + " حبات" : "حبة واحدة"} بسعر ${offer.price} ر.س`;
     default:
-      return offer.text || `عرض خاص على ${offer.productName}`;
+      return offer.text || "عرض خاص";
   }
 }
 
@@ -68,12 +68,12 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
         )}
       </div>
 
-      {/* Content area — 8cm */}
-      <div className="flex-1 flex flex-col p-2 gap-1.5" style={{ height: "8cm" }}>
-        {/* Product name */}
+      {/* Content area — 8cm, content shifted DOWN 2cm from product name */}
+      <div className="flex-1 flex flex-col p-2 gap-1" style={{ height: "8cm", paddingTop: "2cm" }}>
+        {/* Product name (single occurrence) */}
         <div
           className="font-extrabold leading-tight text-center overflow-hidden"
-          style={{ fontSize: "16px", maxHeight: "1.6cm" }}
+          style={{ fontSize: "14px", maxHeight: "1.2cm" }}
         >
           {offer.productName}
         </div>
@@ -81,15 +81,15 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
         {/* Detailed Arabic offer text — placed ABOVE the bottom box */}
         <div
           className="font-bold text-center leading-snug overflow-hidden border border-black/40 rounded-sm py-1 px-1.5 bg-white"
-          style={{ fontSize: "12px", minHeight: "1.4cm" }}
+          style={{ fontSize: "11px", minHeight: "1cm", maxHeight: "1.4cm" }}
         >
           {arabicOffer}
         </div>
 
         {/* Item code — placed ABOVE the date */}
-        <div className="flex justify-between text-[10px] font-semibold mt-auto">
+        <div className="flex justify-between text-[10px] font-semibold">
           <span>كود الصنف:</span>
-          <span className="font-mono">{itemCode || "—"}</span>
+          <span className="font-mono">{offer.itemCode || itemCode || "—"}</span>
         </div>
 
         {/* Dates row */}
@@ -104,44 +104,44 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
           </div>
         </div>
 
-        {/* Bottom box: was the discount/price box — now shows Arabic offer summary in big */}
-        <div className="border-2 border-black rounded-sm py-1.5 px-2 text-center bg-black text-white">
+        {/* Bottom box: big offer summary — stays inside card bottom edge */}
+        <div className="border-2 border-black rounded-sm py-1 px-2 text-center bg-black text-white overflow-hidden" style={{ maxHeight: "1.6cm" }}>
           {offer.offerType === "discount" ? (
-            <div className="font-black leading-none" style={{ fontSize: "32px" }}>
-              {offer.discount}<span style={{ fontSize: "18px" }}>٪</span>
-              <div className="text-[10px] font-bold mt-1">خصم</div>
+            <div className="font-black leading-none" style={{ fontSize: "22px" }}>
+              {offer.discount}<span style={{ fontSize: "14px" }}>٪</span>
+              <div className="text-[9px] font-bold mt-0.5">خصم</div>
             </div>
           ) : offer.offerType === "first_piece_discount" ? (
-            <div className="font-black leading-none" style={{ fontSize: "30px" }}>
-              {offer.discount}<span style={{ fontSize: "16px" }}>٪</span>
-              <div className="text-[10px] font-bold mt-1">على الحبة الأولى</div>
+            <div className="font-black leading-none" style={{ fontSize: "20px" }}>
+              {offer.discount}<span style={{ fontSize: "13px" }}>٪</span>
+              <div className="text-[9px] font-bold mt-0.5">على الحبة الأولى</div>
             </div>
           ) : offer.offerType === "second_piece_discount" ? (
-            <div className="font-black leading-none" style={{ fontSize: "30px" }}>
-              {offer.discount}<span style={{ fontSize: "16px" }}>٪</span>
-              <div className="text-[10px] font-bold mt-1">على الحبة الثانية</div>
+            <div className="font-black leading-none" style={{ fontSize: "20px" }}>
+              {offer.discount}<span style={{ fontSize: "13px" }}>٪</span>
+              <div className="text-[9px] font-bold mt-0.5">على الحبة الثانية</div>
             </div>
           ) : offer.offerType === "bundle" ? (
             offer.buyQty && offer.getQty ? (
-              <div className="font-black leading-none" style={{ fontSize: "26px" }}>
+              <div className="font-black leading-none" style={{ fontSize: "20px" }}>
                 {offer.buyQty}+{offer.getQty}
-                <div className="text-[10px] font-bold mt-1">اشترِ {offer.buyQty} واحصل على {offer.getQty}</div>
+                <div className="text-[9px] font-bold mt-0.5">اشترِ {offer.buyQty} واحصل على {offer.getQty}</div>
               </div>
             ) : offer.price > 0 ? (
-              <div className="font-black leading-none" style={{ fontSize: "26px" }}>
-                {offer.price}<span style={{ fontSize: "12px" }}> ر.س</span>
-                <div className="text-[10px] font-bold mt-1">{offer.quantity > 1 ? `${offer.quantity} حبات` : "حبة"}</div>
+              <div className="font-black leading-none" style={{ fontSize: "20px" }}>
+                {offer.price}<span style={{ fontSize: "11px" }}> ر.س</span>
+                <div className="text-[9px] font-bold mt-0.5">{offer.quantity > 1 ? `${offer.quantity} حبات` : "حبة"}</div>
               </div>
             ) : (
-              <div className="font-bold text-xs">{offer.text || "عرض خاص"}</div>
+              <div className="font-bold text-[11px]">{offer.text || "عرض خاص"}</div>
             )
           ) : offer.offerType === "gift" ? (
-            <div className="font-black leading-none" style={{ fontSize: "20px" }}>
+            <div className="font-black leading-none" style={{ fontSize: "18px" }}>
               {offer.quantity > 1 ? `${offer.quantity}+1` : "1+1"}
-              <div className="text-[10px] font-bold mt-1">هدية مجانية</div>
+              <div className="text-[9px] font-bold mt-0.5">هدية مجانية</div>
             </div>
           ) : (
-            <div className="font-bold text-xs">{offer.text || "عرض خاص"}</div>
+            <div className="font-bold text-[11px]">{offer.text || "عرض خاص"}</div>
           )}
         </div>
       </div>

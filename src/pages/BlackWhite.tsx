@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useOfferHistory } from "@/hooks/useOfferHistory";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { parseOffer, speakOfferSummary } from "@/lib/offerParser";
+import { resolveProduct, extractItemCode, findProductByCode } from "@/lib/productLookup";
 import { VoiceOfferRecorder } from "@/components/VoiceOfferRecorder";
 import { OfferPreviewGridBW } from "@/components/OfferPreviewGridBW";
 import { OfferConfirmDialog } from "@/components/OfferConfirmDialog";
@@ -62,6 +63,15 @@ const BlackWhite = () => {
   const handleFinal = useCallback((text: string) => {
     if (!text.trim()) return;
     const parsed = parseOffer(text);
+    // Auto-resolve item code & official name from products DB
+    const code = extractItemCode(text);
+    const resolved = code ? findProductByCode(code) : resolveProduct(parsed.productName || text);
+    if (resolved) {
+      parsed.itemCode = resolved.code;
+      if (resolved.name) parsed.productName = resolved.name;
+    } else if (code) {
+      parsed.itemCode = code;
+    }
     setPendingOffer(parsed);
     speakOfferSummary(parsed, language);
   }, [language]);
