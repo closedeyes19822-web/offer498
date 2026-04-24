@@ -159,10 +159,13 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
             }
             return "";
           };
-          const productName = String(
-            get("productName", "product", "اسم المنتج", "المنتج", "name") || ""
+          const itemCodeRaw = String(
+            get("itemCode", "item code", "item number", "item no", "code", "كود", "كود الصنف", "الكود", "رقم الصنف") || ""
           ).trim();
-          if (!productName) return null;
+          const productName = String(
+            get("productName", "product", "description", "اسم المنتج", "المنتج", "name", "الوصف") || ""
+          ).trim();
+          if (!productName && !itemCodeRaw) return null;
           const rawType = norm(String(get("offerType", "type", "نوع العرض", "النوع")));
           let offerType: OfferType = "custom";
           if (["gift", "هدية"].includes(rawType)) offerType = "gift";
@@ -185,7 +188,7 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
           }
           const text = String(get("text", "نص العرض", "العرض") || "").trim();
 
-          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text });
+          return buildOffer({ productName: productName || "منتج", itemCode: itemCodeRaw || undefined, offerType, quantity, buyQty, getQty, price, discount, text });
         })
         .filter(Boolean) as Offer[];
 
