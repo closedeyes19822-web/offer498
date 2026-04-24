@@ -10,23 +10,23 @@ interface OfferCardBWProps {
   selected?: boolean;
 }
 
-/** Build a detailed Arabic description of the offer. */
+/** Build a detailed Arabic description of the offer — WITHOUT repeating the product name. */
 function buildArabicOffer(offer: Offer): string {
   switch (offer.offerType) {
     case "discount":
-      return `خصم ${offer.discount}٪ على ${offer.productName}`;
+      return `خصم ${offer.discount}٪`;
     case "first_piece_discount":
-      return `خصم ${offer.discount}٪ على الحبة الأولى من ${offer.productName}`;
+      return `خصم ${offer.discount}٪ على الحبة الأولى`;
     case "second_piece_discount":
-      return `خصم ${offer.discount}٪ على الحبة الثانية من ${offer.productName}`;
+      return `خصم ${offer.discount}٪ على الحبة الثانية`;
     case "gift":
-      return `عند شراء ${offer.quantity > 1 ? offer.quantity : 1} من ${offer.productName} تحصل على 1 مجاناً`;
+      return `عند شراء ${offer.quantity > 1 ? offer.quantity : 1} تحصل على 1 مجاناً`;
     case "bundle":
       if (offer.buyQty && offer.getQty)
-        return `عند شراء ${offer.buyQty} من ${offer.productName} تحصل على ${offer.getQty} مجاناً`;
-      return `${offer.quantity > 1 ? offer.quantity + " حبات" : "حبة واحدة"} من ${offer.productName} بسعر ${offer.price} ريال`;
+        return `عند شراء ${offer.buyQty} تحصل على ${offer.getQty} مجاناً`;
+      return `${offer.quantity > 1 ? offer.quantity + " حبات" : "حبة واحدة"} بسعر ${offer.price} ر.س`;
     default:
-      return offer.text || `عرض خاص على ${offer.productName}`;
+      return offer.text || "عرض خاص";
   }
 }
 
