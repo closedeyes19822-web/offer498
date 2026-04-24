@@ -43,7 +43,7 @@ export function OfferPreviewGridBW({ offers, startDate, endDate, itemCode, selec
     <div className="flex flex-col items-center gap-6 py-4">
       {pages.map((pageOffers, pIdx) => (
         <div key={pIdx} className="print-page-wrap preview-scale-wrap" style={{ ["--preview-scale" as any]: scale }}>
-          <div className="preview-grid" style={{ marginTop: "1cm" }}>
+          <div className="preview-grid">
             {Array.from({ length: SLOTS_PER_PAGE }).map((_, i) => {
               const offer = pageOffers[i];
               if (!offer) {
