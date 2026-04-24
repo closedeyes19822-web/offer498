@@ -18,6 +18,8 @@ export interface Offer {
   buyQty?: number;
   getQty?: number;
   image?: string;
+  /** Optional per-offer item code (overrides global itemCode in BW page) */
+  itemCode?: string;
   createdAt: number;
 }
 
