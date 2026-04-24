@@ -18,8 +18,6 @@ export interface Offer {
   buyQty?: number;
   getQty?: number;
   image?: string;
-  /** 6-digit item code resolved from the products database, when known. */
-  itemCode?: string;
   createdAt: number;
 }
 
