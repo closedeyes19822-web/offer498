@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { resolveProduct, extractItemCode, findProductByCode } from "@/lib/productLookup";
 import type { Language, Offer, OfferType } from "@/types/offer";
 
 interface Props {
@@ -77,18 +78,39 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
       r.readAsDataURL(f);
     });
 
-  const buildOffer = (d: Partial<DetectedOffer>): Offer => ({
-    id: crypto.randomUUID(),
-    productName: d.productName || "منتج",
-    offerType: (d.offerType as OfferType) || "custom",
-    quantity: Number(d.quantity) || 1,
-    buyQty: d.buyQty ? Number(d.buyQty) : undefined,
-    getQty: d.getQty ? Number(d.getQty) : undefined,
-    price: Number(d.price) || 0,
-    discount: Number(d.discount) || 0,
-    text: d.text || "",
-    createdAt: Date.now(),
-  });
+  const buildOffer = (d: Partial<DetectedOffer> & { itemCode?: string }): Offer => {
+    const rawName = d.productName || "منتج";
+    let itemCode = d.itemCode
+      ? String(d.itemCode).replace(/\D/g, "").padStart(6, "0").slice(-6)
+      : undefined;
+    let productName = rawName;
+    if (itemCode) {
+      const p = findProductByCode(itemCode);
+      if (p?.name) productName = p.name;
+    } else {
+      const p = resolveProduct(rawName);
+      if (p) {
+        itemCode = p.code;
+        if (p.name) productName = p.name;
+      } else {
+        const c = extractItemCode(rawName);
+        if (c) itemCode = c;
+      }
+    }
+    return {
+      id: crypto.randomUUID(),
+      productName,
+      offerType: (d.offerType as OfferType) || "custom",
+      quantity: Number(d.quantity) || 1,
+      buyQty: d.buyQty ? Number(d.buyQty) : undefined,
+      getQty: d.getQty ? Number(d.getQty) : undefined,
+      price: Number(d.price) || 0,
+      discount: Number(d.discount) || 0,
+      text: d.text || "",
+      itemCode,
+      createdAt: Date.now(),
+    };
+  };
 
   const handleImage = async (file: File) => {
     setLoading(true);
