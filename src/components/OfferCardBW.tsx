@@ -93,7 +93,7 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
         {/* Item code — placed ABOVE the date */}
         <div className="flex justify-between text-[10px] font-semibold mt-auto">
           <span>كود الصنف:</span>
-          <span className="font-mono">{itemCode || "—"}</span>
+          <span className="font-mono">{effCode || "—"}</span>
         </div>
 
         {/* Dates row */}
