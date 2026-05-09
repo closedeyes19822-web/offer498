@@ -44,7 +44,7 @@ const BlackWhite = () => {
         const s = JSON.parse(saved);
         setStartDate(s.startDate || "");
         setItemCode(s.itemCode || "");
-        if (s.startDate || s.endDate || s.itemCode) setSetupOpen(false);
+        if (s.startDate || s.itemCode) setSetupOpen(false);
       } catch {/* ignore */}
     }
   }, []);
