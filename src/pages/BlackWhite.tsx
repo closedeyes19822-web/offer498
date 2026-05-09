@@ -32,7 +32,7 @@ const BlackWhite = () => {
 
   // Global offer settings applied to ALL cards
   const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const endDate = "2026";
   const [itemCode, setItemCode] = useState<string>("");
   const [setupOpen, setSetupOpen] = useState<boolean>(true);
 
