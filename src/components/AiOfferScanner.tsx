@@ -211,19 +211,37 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
             offerType = "second_piece_discount";
           else if (["discount", "خصم"].includes(rawType)) offerType = "discount";
 
-          const price = Number(get("price", "السعر", "سعر")) || 0;
-          const quantity = Number(get("quantity", "qty", "الكمية", "كمية")) || 1;
-          const discount = Number(get("discount", "الخصم", "نسبة الخصم")) || 0;
-          const buyQty = Number(get("buyQty", "buy", "اشتري", "اشترِ")) || undefined;
-          const getQty = Number(get("getQty", "get", "مجاناً", "مجانا", "هدية كمية")) || undefined;
+          let price = Number(get("price", "السعر", "سعر")) || 0;
+          let quantity = Number(get("quantity", "qty", "الكمية", "كمية")) || 1;
+          let discount = Number(get("discount", "الخصم", "نسبة الخصم")) || 0;
+          let buyQty = Number(get("buyQty", "buy", "اشتري", "اشترِ")) || undefined;
+          let getQty = Number(get("getQty", "get", "مجاناً", "مجانا", "هدية كمية")) || undefined;
+
+          // Parse free-form Offer column (e.g. "25%", "70% 2nd PCS", "2+1", "3pcs FOR 275")
+          const offerCell = String(get("offer", "العرض", "نص العرض") || "").trim();
+          if (offerCell) {
+            const parsed = parseOfferText(offerCell);
+            if (offerType === "custom" && parsed.offerType) offerType = parsed.offerType;
+            if (!discount && parsed.discount) discount = parsed.discount;
+            if (!buyQty && parsed.buyQty) buyQty = parsed.buyQty;
+            if (!getQty && parsed.getQty) getQty = parsed.getQty;
+            if (!price && parsed.price) price = parsed.price;
+            if (parsed.quantity && quantity === 1) quantity = parsed.quantity;
+          }
+
           if (offerType === "custom") {
             if (discount > 0) offerType = "discount";
             else if (buyQty && getQty) offerType = "bundle";
             else if (price > 0 && quantity > 1) offerType = "bundle";
           }
-          const text = String(get("text", "نص العرض", "العرض") || "").trim();
+          const text = String(get("text", "نص العرض") || offerCell || "").trim();
 
-          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text });
+          // Per-item dates and item code
+          const itemCode = String(get("itemCode", "item number", "item no", "كود الصنف", "كود", "رقم الصنف") || "").trim();
+          const startDate = parseShortDate(get("from", "start", "startDate", "تاريخ البداية", "بداية", "من"));
+          const endDate = parseShortDate(get("to", "end", "endDate", "تاريخ النهاية", "نهاية", "إلى", "الى"));
+
+          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text, startDate, endDate, itemCode });
         })
         .filter(Boolean) as Offer[];
 
