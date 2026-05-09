@@ -32,7 +32,7 @@ const BlackWhite = () => {
 
   // Global offer settings applied to ALL cards
   const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const endDate = "2026";
   const [itemCode, setItemCode] = useState<string>("");
   const [setupOpen, setSetupOpen] = useState<boolean>(true);
 
@@ -43,9 +43,8 @@ const BlackWhite = () => {
       try {
         const s = JSON.parse(saved);
         setStartDate(s.startDate || "");
-        setEndDate(s.endDate || "");
         setItemCode(s.itemCode || "");
-        if (s.startDate || s.endDate || s.itemCode) setSetupOpen(false);
+        if (s.startDate || s.itemCode) setSetupOpen(false);
       } catch {/* ignore */}
     }
   }, []);
@@ -53,7 +52,7 @@ const BlackWhite = () => {
   const saveSettings = () => {
     sessionStorage.setItem(
       "bw-offer-settings",
-      JSON.stringify({ startDate, endDate, itemCode }),
+      JSON.stringify({ startDate, itemCode }),
     );
     setSetupOpen(false);
     toast.success("تم حفظ بيانات العرض وستطبق على جميع الكروت");
@@ -248,9 +247,9 @@ const BlackWhite = () => {
               <Label htmlFor="bw-start">تاريخ بداية العروض</Label>
               <Input id="bw-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
-            <div>
-              <Label htmlFor="bw-end">تاريخ نهاية العروض</Label>
-              <Input id="bw-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <div className="rounded border border-black/20 p-2 bg-black/5">
+              <div className="text-xs text-black/70">تاريخ نهاية العروض</div>
+              <div className="font-bold text-sm">2026</div>
             </div>
             <div>
               <Label htmlFor="bw-code">كود الصنف (افتراضي)</Label>
