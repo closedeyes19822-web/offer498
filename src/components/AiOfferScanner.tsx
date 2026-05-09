@@ -134,6 +134,9 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
     price: Number(d.price) || 0,
     discount: Number(d.discount) || 0,
     text: d.text || "",
+    startDate: d.startDate || undefined,
+    endDate: d.endDate || undefined,
+    itemCode: d.itemCode || undefined,
     createdAt: Date.now(),
   });
 
