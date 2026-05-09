@@ -52,7 +52,7 @@ const BlackWhite = () => {
   const saveSettings = () => {
     sessionStorage.setItem(
       "bw-offer-settings",
-      JSON.stringify({ startDate, endDate, itemCode }),
+      JSON.stringify({ startDate, itemCode }),
     );
     setSetupOpen(false);
     toast.success("تم حفظ بيانات العرض وستطبق على جميع الكروت");
