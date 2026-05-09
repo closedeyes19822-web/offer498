@@ -22,7 +22,54 @@ type DetectedOffer = {
   price: number;
   discount: number;
   text: string;
+  startDate?: string;
+  endDate?: string;
+  itemCode?: string;
 };
+
+const MONTHS: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
+function parseShortDate(raw: any, year = 2026): string {
+  if (raw === null || raw === undefined || raw === "") return "";
+  // Excel serial number
+  if (typeof raw === "number") {
+    const d = new Date(Math.round((raw - 25569) * 86400 * 1000));
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  }
+  const s = String(raw).trim();
+  // "10-May" or "10 May" or "10-May-2026"
+  let m = s.match(/^(\d{1,2})[\-\s]([A-Za-z]+)(?:[\-\s](\d{2,4}))?$/);
+  if (m) {
+    const day = String(m[1]).padStart(2, "0");
+    const mo = MONTHS[m[2].slice(0, 3).toLowerCase()];
+    if (mo !== undefined) {
+      const y = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : year;
+      return `${y}-${String(mo + 1).padStart(2, "0")}-${day}`;
+    }
+  }
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  return s;
+}
+
+function parseOfferText(text: string): Partial<DetectedOffer> {
+  const s = String(text || "").trim();
+  if (!s) return { offerType: "custom" };
+  let m = s.match(/(\d+(?:\.\d+)?)\s*%\s*2nd/i);
+  if (m) return { offerType: "second_piece_discount", discount: parseFloat(m[1]), text: s };
+  m = s.match(/(\d+(?:\.\d+)?)\s*%\s*1st/i);
+  if (m) return { offerType: "first_piece_discount", discount: parseFloat(m[1]), text: s };
+  m = s.match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/);
+  if (m) return { offerType: "bundle", buyQty: +m[1], getQty: +m[2], text: s };
+  m = s.match(/(\d+)\s*pcs?\s*for\s*(\d+(?:\.\d+)?)/i);
+  if (m) return { offerType: "bundle", quantity: +m[1], price: parseFloat(m[2]), text: s };
+  m = s.match(/(\d+(?:\.\d+)?)\s*%/);
+  if (m) return { offerType: "discount", discount: parseFloat(m[1]), text: s };
+  return { offerType: "custom", text: s };
+}
 
 const t = (lang: Language, ar: string, en: string) => (lang === "ar" ? ar : en);
 
