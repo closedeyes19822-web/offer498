@@ -18,6 +18,10 @@ export interface Offer {
   buyQty?: number;
   getQty?: number;
   image?: string;
+  /** Per-item overrides (from Excel import). Fall back to global if absent. */
+  startDate?: string;
+  endDate?: string;
+  itemCode?: string;
   createdAt: number;
 }
 

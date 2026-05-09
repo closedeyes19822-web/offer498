@@ -47,6 +47,9 @@ function formatDate(d?: string): string {
 
 export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, selected }: OfferCardBWProps) {
   const arabicOffer = buildArabicOffer(offer);
+  const effStart = offer.startDate || startDate;
+  const effEnd = offer.endDate || endDate;
+  const effCode = offer.itemCode || itemCode;
 
   return (
     <div
@@ -90,18 +93,18 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
         {/* Item code — placed ABOVE the date */}
         <div className="flex justify-between text-[10px] font-semibold mt-auto">
           <span>كود الصنف:</span>
-          <span className="font-mono">{itemCode || "—"}</span>
+          <span className="font-mono">{effCode || "—"}</span>
         </div>
 
         {/* Dates row */}
         <div className="flex justify-between text-[9px] border-t border-black/40 pt-1">
           <div>
             <div className="font-bold">من:</div>
-            <div>{formatDate(startDate)}</div>
+            <div>{formatDate(effStart)}</div>
           </div>
           <div className="text-left">
             <div className="font-bold">إلى:</div>
-            <div>{formatDate(endDate)}</div>
+            <div>{formatDate(effEnd)}</div>
           </div>
         </div>
 

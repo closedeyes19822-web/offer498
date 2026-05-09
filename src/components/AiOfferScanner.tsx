@@ -22,7 +22,54 @@ type DetectedOffer = {
   price: number;
   discount: number;
   text: string;
+  startDate?: string;
+  endDate?: string;
+  itemCode?: string;
 };
+
+const MONTHS: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
+function parseShortDate(raw: any, year = 2026): string {
+  if (raw === null || raw === undefined || raw === "") return "";
+  // Excel serial number
+  if (typeof raw === "number") {
+    const d = new Date(Math.round((raw - 25569) * 86400 * 1000));
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  }
+  const s = String(raw).trim();
+  // "10-May" or "10 May" or "10-May-2026"
+  let m = s.match(/^(\d{1,2})[\-\s]([A-Za-z]+)(?:[\-\s](\d{2,4}))?$/);
+  if (m) {
+    const day = String(m[1]).padStart(2, "0");
+    const mo = MONTHS[m[2].slice(0, 3).toLowerCase()];
+    if (mo !== undefined) {
+      const y = m[3] ? (m[3].length === 2 ? 2000 + +m[3] : +m[3]) : year;
+      return `${y}-${String(mo + 1).padStart(2, "0")}-${day}`;
+    }
+  }
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+  return s;
+}
+
+function parseOfferText(text: string): Partial<DetectedOffer> {
+  const s = String(text || "").trim();
+  if (!s) return { offerType: "custom" };
+  let m = s.match(/(\d+(?:\.\d+)?)\s*%\s*2nd/i);
+  if (m) return { offerType: "second_piece_discount", discount: parseFloat(m[1]), text: s };
+  m = s.match(/(\d+(?:\.\d+)?)\s*%\s*1st/i);
+  if (m) return { offerType: "first_piece_discount", discount: parseFloat(m[1]), text: s };
+  m = s.match(/^\s*(\d+)\s*\+\s*(\d+)\s*$/);
+  if (m) return { offerType: "bundle", buyQty: +m[1], getQty: +m[2], text: s };
+  m = s.match(/(\d+)\s*pcs?\s*for\s*(\d+(?:\.\d+)?)/i);
+  if (m) return { offerType: "bundle", quantity: +m[1], price: parseFloat(m[2]), text: s };
+  m = s.match(/(\d+(?:\.\d+)?)\s*%/);
+  if (m) return { offerType: "discount", discount: parseFloat(m[1]), text: s };
+  return { offerType: "custom", text: s };
+}
 
 const t = (lang: Language, ar: string, en: string) => (lang === "ar" ? ar : en);
 
@@ -87,6 +134,9 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
     price: Number(d.price) || 0,
     discount: Number(d.discount) || 0,
     text: d.text || "",
+    startDate: d.startDate || undefined,
+    endDate: d.endDate || undefined,
+    itemCode: d.itemCode || undefined,
     createdAt: Date.now(),
   });
 
@@ -161,19 +211,37 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
             offerType = "second_piece_discount";
           else if (["discount", "خصم"].includes(rawType)) offerType = "discount";
 
-          const price = Number(get("price", "السعر", "سعر")) || 0;
-          const quantity = Number(get("quantity", "qty", "الكمية", "كمية")) || 1;
-          const discount = Number(get("discount", "الخصم", "نسبة الخصم")) || 0;
-          const buyQty = Number(get("buyQty", "buy", "اشتري", "اشترِ")) || undefined;
-          const getQty = Number(get("getQty", "get", "مجاناً", "مجانا", "هدية كمية")) || undefined;
+          let price = Number(get("price", "السعر", "سعر")) || 0;
+          let quantity = Number(get("quantity", "qty", "الكمية", "كمية")) || 1;
+          let discount = Number(get("discount", "الخصم", "نسبة الخصم")) || 0;
+          let buyQty = Number(get("buyQty", "buy", "اشتري", "اشترِ")) || undefined;
+          let getQty = Number(get("getQty", "get", "مجاناً", "مجانا", "هدية كمية")) || undefined;
+
+          // Parse free-form Offer column (e.g. "25%", "70% 2nd PCS", "2+1", "3pcs FOR 275")
+          const offerCell = String(get("offer", "العرض", "نص العرض") || "").trim();
+          if (offerCell) {
+            const parsed = parseOfferText(offerCell);
+            if (offerType === "custom" && parsed.offerType) offerType = parsed.offerType;
+            if (!discount && parsed.discount) discount = parsed.discount;
+            if (!buyQty && parsed.buyQty) buyQty = parsed.buyQty;
+            if (!getQty && parsed.getQty) getQty = parsed.getQty;
+            if (!price && parsed.price) price = parsed.price;
+            if (parsed.quantity && quantity === 1) quantity = parsed.quantity;
+          }
+
           if (offerType === "custom") {
             if (discount > 0) offerType = "discount";
             else if (buyQty && getQty) offerType = "bundle";
             else if (price > 0 && quantity > 1) offerType = "bundle";
           }
-          const text = String(get("text", "نص العرض", "العرض") || "").trim();
+          const text = String(get("text", "نص العرض") || offerCell || "").trim();
 
-          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text });
+          // Per-item dates and item code
+          const itemCode = String(get("itemCode", "item number", "item no", "كود الصنف", "كود", "رقم الصنف") || "").trim();
+          const startDate = parseShortDate(get("from", "start", "startDate", "تاريخ البداية", "بداية", "من"));
+          const endDate = parseShortDate(get("to", "end", "endDate", "تاريخ النهاية", "نهاية", "إلى", "الى"));
+
+          return buildOffer({ productName, offerType, quantity, buyQty, getQty, price, discount, text, startDate, endDate, itemCode });
         })
         .filter(Boolean) as Offer[];
 
