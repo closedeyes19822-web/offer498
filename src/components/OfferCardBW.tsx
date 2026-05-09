@@ -100,7 +100,7 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
         <div className="flex justify-between text-[9px] border-t border-black/40 pt-1">
           <div>
             <div className="font-bold">من:</div>
-            <div>{formatDate(startDate)}</div>
+            <div>{formatDate(effStart)}</div>
           </div>
           <div className="text-left">
             <div className="font-bold">إلى:</div>
