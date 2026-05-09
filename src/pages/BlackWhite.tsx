@@ -43,7 +43,6 @@ const BlackWhite = () => {
       try {
         const s = JSON.parse(saved);
         setStartDate(s.startDate || "");
-        setEndDate(s.endDate || "");
         setItemCode(s.itemCode || "");
         if (s.startDate || s.endDate || s.itemCode) setSetupOpen(false);
       } catch {/* ignore */}
