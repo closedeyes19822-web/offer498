@@ -247,9 +247,9 @@ const BlackWhite = () => {
               <Label htmlFor="bw-start">تاريخ بداية العروض</Label>
               <Input id="bw-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
-            <div>
-              <Label htmlFor="bw-end">تاريخ نهاية العروض</Label>
-              <Input id="bw-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <div className="rounded border border-black/20 p-2 bg-black/5">
+              <div className="text-xs text-black/70">تاريخ نهاية العروض</div>
+              <div className="font-bold text-sm">2026</div>
             </div>
             <div>
               <Label htmlFor="bw-code">كود الصنف (افتراضي)</Label>
