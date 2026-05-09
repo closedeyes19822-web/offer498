@@ -32,6 +32,7 @@ function buildArabicOffer(offer: Offer): string {
 
 function formatDate(d?: string): string {
   if (!d) return "—";
+  if (d === "2026") return "2026";
   try {
     const dt = new Date(d);
     return dt.toLocaleDateString("ar-SA-u-ca-gregory", {
