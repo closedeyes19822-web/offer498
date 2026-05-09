@@ -104,7 +104,7 @@ export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, sele
           </div>
           <div className="text-left">
             <div className="font-bold">إلى:</div>
-            <div>{formatDate(endDate)}</div>
+            <div>{formatDate(effEnd)}</div>
           </div>
         </div>
 
