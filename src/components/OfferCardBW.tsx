@@ -47,6 +47,9 @@ function formatDate(d?: string): string {
 
 export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, selected }: OfferCardBWProps) {
   const arabicOffer = buildArabicOffer(offer);
+  const effStart = offer.startDate || startDate;
+  const effEnd = offer.endDate || endDate;
+  const effCode = offer.itemCode || itemCode;
 
   return (
     <div
