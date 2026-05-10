@@ -117,6 +117,9 @@ Deno.serve(async (req) => {
                           price: { type: "number" },
                           discount: { type: "number" },
                           text: { type: "string" },
+                          itemCode: { type: "string", description: "SKU / item number if visible" },
+                          startDate: { type: "string", description: "Offer start date in YYYY-MM-DD (default year 2026)" },
+                          endDate: { type: "string", description: "Offer end date in YYYY-MM-DD (default year 2026)" },
                         },
                         required: [
                           "productName",
