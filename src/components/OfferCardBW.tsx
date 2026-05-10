@@ -33,16 +33,16 @@ function buildArabicOffer(offer: Offer): string {
 function formatDate(d?: string): string {
   if (!d) return "—";
   if (d === "2026") return "2026";
+  // Already YYYY-MM-DD
+  const m = String(d).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
   try {
     const dt = new Date(d);
+    if (isNaN(dt.getTime())) return d;
     return dt.toLocaleDateString("ar-SA-u-ca-gregory", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
+      year: "numeric", month: "2-digit", day: "2-digit",
     });
-  } catch {
-    return d;
-  }
+  } catch { return d; }
 }
 
 export function OfferCardBW({ offer, startDate, endDate, itemCode, onClick, selected }: OfferCardBWProps) {

@@ -30,19 +30,19 @@ const BlackWhite = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Global offer settings applied to ALL cards
+  // Global offer settings applied to ALL cards (defaults; per-item OCR/Excel can override)
   const [startDate, setStartDate] = useState<string>("");
-  const endDate = "2026";
+  const [endDate, setEndDate] = useState<string>("2026-12-31");
   const [itemCode, setItemCode] = useState<string>("");
   const [setupOpen, setSetupOpen] = useState<boolean>(true);
 
-  // Ask once at start of work session
   useEffect(() => {
     const saved = sessionStorage.getItem("bw-offer-settings");
     if (saved) {
       try {
         const s = JSON.parse(saved);
         setStartDate(s.startDate || "");
+        setEndDate(s.endDate || "2026-12-31");
         setItemCode(s.itemCode || "");
         if (s.startDate || s.itemCode) setSetupOpen(false);
       } catch {/* ignore */}
@@ -52,7 +52,7 @@ const BlackWhite = () => {
   const saveSettings = () => {
     sessionStorage.setItem(
       "bw-offer-settings",
-      JSON.stringify({ startDate, itemCode }),
+      JSON.stringify({ startDate, endDate, itemCode }),
     );
     setSetupOpen(false);
     toast.success("تم حفظ بيانات العرض وستطبق على جميع الكروت");
@@ -247,9 +247,10 @@ const BlackWhite = () => {
               <Label htmlFor="bw-start">تاريخ بداية العروض</Label>
               <Input id="bw-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
-            <div className="rounded border border-black/20 p-2 bg-black/5">
-              <div className="text-xs text-black/70">تاريخ نهاية العروض</div>
-              <div className="font-bold text-sm">2026</div>
+            <div>
+              <Label htmlFor="bw-end">تاريخ نهاية العروض</Label>
+              <Input id="bw-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              <p className="text-[10px] text-black/60 mt-1">افتراضي 2026 — يمكن تعديله يدوياً، أو سيُستخرج تلقائياً من الـ Excel/الصور لكل صنف.</p>
             </div>
             <div>
               <Label htmlFor="bw-code">كود الصنف (افتراضي)</Label>
