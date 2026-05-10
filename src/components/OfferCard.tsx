@@ -9,14 +9,25 @@ interface OfferCardProps {
   selected?: boolean;
 }
 
+// Color rules: direct discount = red, second piece = yellow, bundle = green, free/gift = blue
 const typeStyles: Record<Offer["offerType"], { band: string; accent: string; label: string }> = {
-  gift:                   { band: "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]", accent: "text-[hsl(var(--success))]", label: "هدية مجانية" },
+  gift:                   { band: "bg-[hsl(var(--info))] text-[hsl(var(--info-foreground))]", accent: "text-[hsl(var(--info))]", label: "هدية مجانية" },
   discount:               { band: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))]", accent: "text-[hsl(var(--destructive))]", label: "خصم خاص" },
   first_piece_discount:   { band: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))]", accent: "text-[hsl(var(--destructive))]", label: "خصم على الحبة الأولى" },
-  second_piece_discount:  { band: "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))]", accent: "text-[hsl(var(--destructive))]", label: "خصم على الحبة الثانية" },
-  bundle:                 { band: "bg-[hsl(var(--info))] text-[hsl(var(--info-foreground))]", accent: "text-[hsl(var(--info))]", label: "عرض السعر" },
+  second_piece_discount:  { band: "bg-[hsl(var(--warning))] text-[hsl(var(--warning-foreground))]", accent: "text-[hsl(var(--warning))]", label: "خصم على الحبة الثانية" },
+  bundle:                 { band: "bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]", accent: "text-[hsl(var(--success))]", label: "عرض الباندل" },
   custom:                 { band: "bg-primary text-primary-foreground", accent: "text-primary", label: "عرض" },
 };
+
+function formatDate(d?: string): string {
+  if (!d) return "";
+  if (d === "2026") return "2026";
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return d;
+    return dt.toLocaleDateString("ar-SA-u-ca-gregory", { year: "numeric", month: "2-digit", day: "2-digit" });
+  } catch { return d; }
+}
 
 /** Auto-shrinks text to fit container height. */
 function useAutoFit<T extends HTMLElement>(deps: any[], min = 10, max = 32) {
@@ -139,6 +150,18 @@ export function OfferCard({ offer, printMode, onClick, selected }: OfferCardProp
             <div className="font-bold text-sm px-2 text-center">{offer.text || "عرض خاص"}</div>
           )}
         </div>
+
+        {/* SKU + dates footer */}
+        {(offer.itemCode || offer.startDate || offer.endDate) && (
+          <div className="mt-1 flex items-center justify-between text-[9px] text-muted-foreground border-t border-border/60 pt-1">
+            <span className="font-mono">{offer.itemCode || ""}</span>
+            <span>
+              {formatDate(offer.startDate)}
+              {(offer.startDate || offer.endDate) && " — "}
+              {formatDate(offer.endDate)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
