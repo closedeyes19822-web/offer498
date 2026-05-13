@@ -260,8 +260,13 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
         return;
       }
       onOffersDetected(offers);
+      const sheetCount = wb.SheetNames.length;
       toast.success(
-        t(language, `تم استيراد ${offers.length} عرض`, `Imported ${offers.length} offer(s)`)
+        t(
+          language,
+          `تم استيراد ${offers.length} عرض من ${sheetCount} ورقة`,
+          `Imported ${offers.length} offer(s) from ${sheetCount} sheet(s)`
+        )
       );
       setOpen(false);
     } catch (e: any) {
