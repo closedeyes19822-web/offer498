@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: userContent },
           ],
+          max_tokens: 16000,
           tools: [
             {
               type: "function",
