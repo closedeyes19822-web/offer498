@@ -173,8 +173,14 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
     try {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      // Aggregate rows from ALL sheets in the workbook
+      const rows: any[] = [];
+      for (const sheetName of wb.SheetNames) {
+        const sheet = wb.Sheets[sheetName];
+        if (!sheet) continue;
+        const sheetRows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        for (const r of sheetRows) rows.push({ __sheet: sheetName, ...r });
+      }
 
       const norm = (s: string) => String(s || "").toLowerCase().trim();
       const seen = new Set<string>();
@@ -254,8 +260,13 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
         return;
       }
       onOffersDetected(offers);
+      const sheetCount = wb.SheetNames.length;
       toast.success(
-        t(language, `تم استيراد ${offers.length} عرض`, `Imported ${offers.length} offer(s)`)
+        t(
+          language,
+          `تم استيراد ${offers.length} عرض من ${sheetCount} ورقة`,
+          `Imported ${offers.length} offer(s) from ${sheetCount} sheet(s)`
+        )
       );
       setOpen(false);
     } catch (e: any) {
