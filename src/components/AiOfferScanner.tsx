@@ -236,8 +236,10 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
           }
           const text = String(get("text", "نص العرض") || offerCell || "").trim();
 
-          // Per-item dates and item code
-          const itemCode = String(get("itemCode", "item number", "item no", "كود الصنف", "كود", "رقم الصنف") || "").trim();
+          // Per-item dates and item code — extract 6-digit code only
+          const rawCode = String(get("itemCode", "item number", "item no", "item code", "كود الصنف", "كود", "رقم الصنف") || "").trim();
+          const sixMatch = rawCode.match(/\d{6}/);
+          const itemCode = sixMatch ? sixMatch[0] : rawCode;
           const startDate = parseShortDate(get("from", "start", "startDate", "تاريخ البداية", "بداية", "من"));
           const endDate = parseShortDate(get("to", "end", "endDate", "تاريخ النهاية", "نهاية", "إلى", "الى"));
 
