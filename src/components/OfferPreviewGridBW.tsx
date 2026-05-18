@@ -1,5 +1,5 @@
 import type { Offer } from "@/types/offer";
-import { OfferCardBW } from "./OfferCardBW";
+import { SapOfferCard } from "./SapOfferCard";
 import { usePreviewScale } from "@/hooks/usePreviewScale";
 
 interface Props {
@@ -56,13 +56,16 @@ export function OfferPreviewGridBW({ offers, startDate, endDate, itemCode, selec
                   </div>
                 );
               }
+              const merged = {
+                ...offer,
+                startDate: offer.startDate || startDate,
+                endDate: offer.endDate || endDate,
+                itemCode: offer.itemCode || itemCode,
+              };
               return (
-                <OfferCardBW
+                <SapOfferCard
                   key={offer.id}
-                  offer={offer}
-                  startDate={startDate}
-                  endDate={endDate}
-                  itemCode={itemCode}
+                  offer={merged}
                   selected={selectedId === offer.id}
                   onClick={() => onSelect?.(offer.id)}
                 />
