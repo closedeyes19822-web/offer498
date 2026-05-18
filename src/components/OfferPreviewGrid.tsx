@@ -1,5 +1,5 @@
 import type { Offer } from "@/types/offer";
-import { OfferCard } from "./OfferCard";
+import { SapOfferCard } from "./SapOfferCard";
 import { usePreviewScale } from "@/hooks/usePreviewScale";
 
 interface Props {
@@ -54,7 +54,7 @@ export function OfferPreviewGrid({ offers, selectedId, onSelect }: Props) {
                 );
               }
               return (
-                <OfferCard
+                <SapOfferCard
                   key={offer.id}
                   offer={offer}
                   selected={selectedId === offer.id}
