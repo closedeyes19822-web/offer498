@@ -116,6 +116,9 @@ const Index = () => {
             <Button variant="outline" size="sm" onClick={handleClear} className="gap-1">
               <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">مسح الكل</span>
             </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+              <FileDown className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
+            </Button>
             <Button size="sm" onClick={handlePrint} className="gap-1 text-primary-foreground" style={{ background: "var(--gradient-primary)" }}>
               <Printer className="h-4 w-4" /> {language === "ar" ? "طباعة" : "Print"}
             </Button>
