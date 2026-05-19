@@ -62,6 +62,20 @@ const Index = () => {
     window.print();
   };
 
+  const handleExportPdf = async () => {
+    if (offers.length === 0) {
+      toast.error(language === "ar" ? "لا توجد عروض للتصدير" : "No offers to export");
+      return;
+    }
+    const t = toast.loading(language === "ar" ? "جاري إنشاء PDF..." : "Generating PDF...");
+    try {
+      await exportPrintAreaToPdf(`offers-${Date.now()}.pdf`);
+      toast.success(language === "ar" ? "تم تصدير PDF" : "PDF exported", { id: t });
+    } catch (e) {
+      toast.error(language === "ar" ? "فشل التصدير" : "Export failed", { id: t });
+    }
+  };
+
   const handleClear = () => {
     if (offers.length === 0) return;
     clearAll();
