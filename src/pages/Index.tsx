@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Trash2, Printer, Sparkles, FileText } from "lucide-react";
+import { Undo2, Redo2, Trash2, Printer, Sparkles, FileText, FileDown } from "lucide-react";
+import { exportPrintAreaToPdf } from "@/lib/exportPdf";
 import { toast } from "sonner";
 import { useOfferHistory } from "@/hooks/useOfferHistory";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
@@ -61,6 +62,20 @@ const Index = () => {
     window.print();
   };
 
+  const handleExportPdf = async () => {
+    if (offers.length === 0) {
+      toast.error(language === "ar" ? "لا توجد عروض للتصدير" : "No offers to export");
+      return;
+    }
+    const t = toast.loading(language === "ar" ? "جاري إنشاء PDF..." : "Generating PDF...");
+    try {
+      await exportPrintAreaToPdf(`offers-${Date.now()}.pdf`);
+      toast.success(language === "ar" ? "تم تصدير PDF" : "PDF exported", { id: t });
+    } catch (e) {
+      toast.error(language === "ar" ? "فشل التصدير" : "Export failed", { id: t });
+    }
+  };
+
   const handleClear = () => {
     if (offers.length === 0) return;
     clearAll();
@@ -100,6 +115,9 @@ const Index = () => {
             </Button>
             <Button variant="outline" size="sm" onClick={handleClear} className="gap-1">
               <Trash2 className="h-4 w-4" /> <span className="hidden sm:inline">مسح الكل</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1">
+              <FileDown className="h-4 w-4" /> <span className="hidden sm:inline">PDF</span>
             </Button>
             <Button size="sm" onClick={handlePrint} className="gap-1 text-primary-foreground" style={{ background: "var(--gradient-primary)" }}>
               <Printer className="h-4 w-4" /> {language === "ar" ? "طباعة" : "Print"}

@@ -126,18 +126,20 @@
     background: white !important;
   }
   .no-print { display: none !important; }
+  .preview-scale-wrap { width: auto !important; height: auto !important; overflow: visible !important; }
+  .preview-scale-wrap > .preview-grid { transform: none !important; }
   .preview-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, 6.5cm) !important;
-    grid-template-rows: repeat(2, 12.5cm) !important;
-    column-gap: 0.5cm !important;
-    row-gap: 1.8cm !important;
+    grid-template-columns: repeat(3, 6cm) !important;
+    grid-template-rows: repeat(2, 13cm) !important;
+    column-gap: 0.4cm !important;
+    row-gap: 0.4cm !important;
     transform: none !important;
     margin: 0 !important;
   }
   .preview-card {
-    width: 6.5cm !important;
-    height: 12.5cm !important;
+    width: 6cm !important;
+    height: 13cm !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     box-shadow: none !important;
@@ -147,11 +149,11 @@
     page-break-after: always;
     break-after: page;
     display: flex !important;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     width: 21cm;
     height: 29.7cm;
-    padding: 2cm 1cm !important;
+    padding: 1.65cm 1.1cm !important;
     box-sizing: border-box !important;
   }
   .print-page-wrap:last-child { page-break-after: auto; break-after: auto; }
