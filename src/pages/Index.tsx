@@ -1,7 +1,8 @@
 import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Trash2, Printer, Sparkles, FileText } from "lucide-react";
+import { Undo2, Redo2, Trash2, Printer, Sparkles, FileText, FileDown } from "lucide-react";
+import { exportPrintAreaToPdf } from "@/lib/exportPdf";
 import { toast } from "sonner";
 import { useOfferHistory } from "@/hooks/useOfferHistory";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
