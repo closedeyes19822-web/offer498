@@ -300,12 +300,13 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
   };
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>, kind: "image" | "excel") => {
-    const f = e.target.files?.[0];
+    const files = Array.from(e.target.files || []);
     e.target.value = "";
-    if (!f) return;
-    if (kind === "image") handleImage(f);
-    else handleExcel(f);
+    if (files.length === 0) return;
+    if (kind === "image") handleImages(files);
+    else handleExcel(files[0]);
   };
+
 
   return (
     <>
