@@ -288,10 +288,11 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
       toast.success(
         t(
           language,
-          `تم استيراد ${offers.length} عرض من ${sheetCount} ورقة`,
-          `Imported ${offers.length} offer(s) from ${sheetCount} sheet(s)`
+          `تم استيراد ${deduped.length} عرض من ${sheetCount} ورقة`,
+          `Imported ${deduped.length} offer(s) from ${sheetCount} sheet(s)`
         )
       );
+
       setOpen(false);
     } catch (e: any) {
       console.error(e);
