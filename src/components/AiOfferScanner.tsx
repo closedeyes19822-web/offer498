@@ -79,36 +79,60 @@ const t = (lang: Language, ar: string, en: string) => (lang === "ar" ? ar : en);
 export function AiOfferScanner({ language, onOffersDetected }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState("");
   const [transcript, setTranscript] = useState("");
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const excelRef = useRef<HTMLInputElement>(null);
 
+  const buildOffer = (d: Partial<DetectedOffer>): Offer | null =>
+    normalizeDetected(d as Partial<Offer>);
+
+  const errMessage = (e: any): string => {
+    const status = e?.context?.status ?? e?.status;
+    const raw = String(e?.message || "");
+    if (status === 429 || /429|rate/i.test(raw))
+      return t(language, "تم تجاوز الحد، حاول بعد قليل", "Rate limited, try again shortly");
+    if (status === 402 || /402|credit|رصيد/i.test(raw))
+      return t(language, "الرصيد غير كافٍ، يرجى إضافة رصيد", "Insufficient credits");
+    return raw || t(language, "فشل التحليل", "Analysis failed");
+  };
+
+  const pushOffers = (detected: any[], label: string) => {
+    const offers = dedupeOffers(
+      (detected || []).map(buildOffer).filter(Boolean) as Offer[]
+    );
+    if (offers.length === 0) {
+      toast.error(t(language, "لم يتم اكتشاف عروض", "No offers detected"));
+      return false;
+    }
+    onOffersDetected(offers);
+    toast.success(
+      t(language, `تم اكتشاف ${offers.length} عرض ${label}`, `${offers.length} offer(s) detected ${label}`)
+    );
+    return true;
+  };
+
   const analyzeTranscript = async (text: string) => {
     if (!text.trim()) return;
     setLoading(true);
+    setProgress(t(language, "تحليل النص المنطوق...", "Analyzing speech..."));
     try {
       const { data, error } = await supabase.functions.invoke("analyze-offer-image", {
         body: { transcript: text },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      const offers: Offer[] = (data?.offers || []).map(buildOffer);
-      if (offers.length === 0) {
-        toast.error(t(language, "لم يتم اكتشاف عروض", "No offers detected"));
-        return;
+      if (pushOffers(data?.offers, "")) {
+        setTranscript("");
+        setOpen(false);
       }
-      onOffersDetected(offers);
-      toast.success(
-        t(language, `تم اكتشاف ${offers.length} عرض`, `${offers.length} offer(s) detected`)
-      );
-      setTranscript("");
-      setOpen(false);
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || t(language, "فشل التحليل", "Analysis failed"));
+      toast.error(errMessage(e));
     } finally {
       setLoading(false);
+      setProgress("");
     }
   };
 
@@ -119,57 +143,52 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
     },
   });
 
-  const fileToDataUrl = (f: File) =>
-    new Promise<string>((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result as string);
-      r.onerror = rej;
-      r.readAsDataURL(f);
-    });
-
-  const buildOffer = (d: Partial<DetectedOffer>): Offer => ({
-    id: crypto.randomUUID(),
-    productName: d.productName || "منتج",
-    offerType: (d.offerType as OfferType) || "custom",
-    quantity: Number(d.quantity) || 1,
-    buyQty: d.buyQty ? Number(d.buyQty) : undefined,
-    getQty: d.getQty ? Number(d.getQty) : undefined,
-    price: Number(d.price) || 0,
-    discount: Number(d.discount) || 0,
-    text: d.text || "",
-    startDate: d.startDate || undefined,
-    endDate: d.endDate || undefined,
-    itemCode: d.itemCode || undefined,
-    createdAt: Date.now(),
-  });
-
-  const handleImage = async (file: File) => {
+  const handleImages = async (files: File[]) => {
+    const imgs = files.filter((f) => f.type.startsWith("image/"));
+    if (imgs.length === 0) {
+      toast.error(t(language, "الملف ليس صورة", "Not an image file"));
+      return;
+    }
     setLoading(true);
+    const all: any[] = [];
+    let failed = 0;
     try {
-      const imageBase64 = await fileToDataUrl(file);
-      const { data, error } = await supabase.functions.invoke("analyze-offer-image", {
-        body: { imageBase64 },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      const offers: Offer[] = (data?.offers || []).map(buildOffer);
-      if (offers.length === 0) {
-        toast.error(t(language, "لم يتم اكتشاف عروض", "No offers detected"));
+      for (let i = 0; i < imgs.length; i++) {
+        setProgress(
+          imgs.length > 1
+            ? t(language, `تحليل الصورة ${i + 1} من ${imgs.length}...`, `Analyzing image ${i + 1} of ${imgs.length}...`)
+            : t(language, "جاري التحليل بالذكاء الاصطناعي...", "Analyzing with AI...")
+        );
+        try {
+          const imageBase64 = await prepareImageForAI(imgs[i]);
+          const { data, error } = await supabase.functions.invoke("analyze-offer-image", {
+            body: { imageBase64 },
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          all.push(...(data?.offers || []));
+        } catch (e: any) {
+          failed++;
+          console.error("image analyze failed", e);
+          if (imgs.length === 1) throw e;
+        }
+      }
+      if (failed > 0 && all.length === 0) {
+        toast.error(t(language, "فشل تحليل الصور", "Image analysis failed"));
         return;
       }
-      onOffersDetected(offers);
-      toast.success(
-        t(language, `تم اكتشاف ${offers.length} عرض`, `${offers.length} offer(s) detected`)
-      );
-      setOpen(false);
+      if (pushOffers(all, failed ? t(language, `(فشل ${failed})`, `(${failed} failed)`) : "")) {
+        setOpen(false);
+      }
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message || t(language, "فشل التحليل", "Analysis failed"));
+      toast.error(errMessage(e));
     } finally {
       setLoading(false);
+      setProgress("");
     }
   };
+
 
   const handleExcel = async (file: File) => {
     setLoading(true);
