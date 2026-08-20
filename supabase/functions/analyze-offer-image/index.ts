@@ -48,6 +48,8 @@ const SYSTEM_PROMPT = `أنت مساعد ذكي متخصص في استخراج �
 **مهم جداً: لا تُدرج منتجاً واحداً أكثر من مرة في القائمة.**
 **يمكنك استخراج حتى 500 صنف في المرة الواحدة** — إذا احتوت الصورة أو الجدول على عشرات أو مئات الأصناف، استخرجها كلها بالكامل دون حذف أو اختصار.`;
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -62,17 +64,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (imageBase64 && typeof imageBase64 === "string") {
+      if (!imageBase64.startsWith("data:image/") && !imageBase64.startsWith("http")) {
+        return new Response(JSON.stringify({ error: "صيغة الصورة غير صالحة" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // ~15MB base64 guard
+      if (imageBase64.length > 20_000_000) {
+        return new Response(JSON.stringify({ error: "حجم الصورة كبير جداً، قلل الدقة" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const userContent: any = transcript
       ? `استخرج كل العروض من النص التالي المنطوق:\n"""${transcript}"""`
       : [
-          { type: "text", text: "استخرج كل العروض من هذه الصورة." },
+          {
+            type: "text",
+            text:
+              "استخرج كل العروض من هذه الصورة. اقرأ الجدول صفاً صفاً إن وُجد، ولا تتجاهل أي صف. " +
+              "أعد كود الصنف السداسي والتواريخ كما تظهر تماماً. إن كان النص غير واضح فاتركه فارغاً بدل تخمينه.",
+          },
           { type: "image_url", image_url: { url: imageBase64 } },
         ];
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const response = await fetch(
+    const callGateway = () => fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
@@ -82,10 +105,12 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
+          temperature: 0,
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: userContent },
           ],
+
           max_tokens: 16000,
           tools: [
             {
