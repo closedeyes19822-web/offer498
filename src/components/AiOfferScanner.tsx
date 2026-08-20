@@ -275,13 +275,15 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
         })
         .filter(Boolean) as Offer[];
 
-      if (offers.length === 0) {
+      const deduped = dedupeOffers(offers);
+      if (deduped.length === 0) {
         toast.error(
           t(language, "لم يتم العثور على عروض في الملف", "No offers found in file")
         );
         return;
       }
-      onOffersDetected(offers);
+      onOffersDetected(deduped);
+
       const sheetCount = wb.SheetNames.length;
       toast.success(
         t(
