@@ -48,6 +48,8 @@ const SYSTEM_PROMPT = `أنت مساعد ذكي متخصص في استخراج �
 **مهم جداً: لا تُدرج منتجاً واحداً أكثر من مرة في القائمة.**
 **يمكنك استخراج حتى 500 صنف في المرة الواحدة** — إذا احتوت الصورة أو الجدول على عشرات أو مئات الأصناف، استخرجها كلها بالكامل دون حذف أو اختصار.`;
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -62,17 +64,38 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (imageBase64 && typeof imageBase64 === "string") {
+      if (!imageBase64.startsWith("data:image/") && !imageBase64.startsWith("http")) {
+        return new Response(JSON.stringify({ error: "صيغة الصورة غير صالحة" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // ~15MB base64 guard
+      if (imageBase64.length > 20_000_000) {
+        return new Response(JSON.stringify({ error: "حجم الصورة كبير جداً، قلل الدقة" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const userContent: any = transcript
       ? `استخرج كل العروض من النص التالي المنطوق:\n"""${transcript}"""`
       : [
-          { type: "text", text: "استخرج كل العروض من هذه الصورة." },
+          {
+            type: "text",
+            text:
+              "استخرج كل العروض من هذه الصورة. اقرأ الجدول صفاً صفاً إن وُجد، ولا تتجاهل أي صف. " +
+              "أعد كود الصنف السداسي والتواريخ كما تظهر تماماً. إن كان النص غير واضح فاتركه فارغاً بدل تخمينه.",
+          },
           { type: "image_url", image_url: { url: imageBase64 } },
         ];
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const response = await fetch(
+    const callGateway = () => fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
@@ -82,10 +105,12 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
+          temperature: 0,
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: userContent },
           ],
+
           max_tokens: 16000,
           tools: [
             {
@@ -147,6 +172,14 @@ Deno.serve(async (req) => {
       }
     );
 
+    // Bounded retry for transient 429 / 5xx only
+    let response = await callGateway();
+    for (let attempt = 0; attempt < 2 && (response.status === 429 || response.status >= 500); attempt++) {
+      const retryAfter = Number(response.headers.get("Retry-After"));
+      await sleep(retryAfter > 0 ? retryAfter * 1000 : 1200 * (attempt + 1));
+      response = await callGateway();
+    }
+
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
@@ -167,12 +200,35 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const args = toolCall ? JSON.parse(toolCall.function.arguments) : { offers: [] };
+    let args: { offers: any[] } = { offers: [] };
+    if (toolCall) {
+      try {
+        args = JSON.parse(toolCall.function.arguments);
+      } catch (err) {
+        console.error("tool args parse failed:", err);
+        args = { offers: [] };
+      }
+    }
 
-    return new Response(JSON.stringify(args), {
+    // Server-side clean-up: drop empty names, dedupe by code+name
+    const seen = new Set<string>();
+    const offers = (Array.isArray(args.offers) ? args.offers : []).filter((o: any) => {
+      const name = String(o?.productName || "").replace(/\s+/g, " ").trim();
+      if (!name) return false;
+      o.productName = name;
+      const key = `${String(o?.itemCode || "").trim()}|${name.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log(`analyze-offer-image: returned ${offers.length} offers`);
+
+    return new Response(JSON.stringify({ offers }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("analyze-offer-image error:", e);
     return new Response(
