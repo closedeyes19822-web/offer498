@@ -6,12 +6,15 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from "xlsx";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
+import { prepareImageForAI } from "@/lib/imagePrep";
+import { normalizeDetected, dedupeOffers, extractItemCode } from "@/lib/normalizeOffer";
 import type { Language, Offer, OfferType } from "@/types/offer";
 
 interface Props {
   language: Language;
   onOffersDetected: (offers: Offer[]) => void;
 }
+
 
 type DetectedOffer = {
   productName: string;
