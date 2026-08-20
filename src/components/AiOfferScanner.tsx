@@ -347,8 +347,9 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
             <div className="py-10 flex flex-col items-center gap-3 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="text-sm font-medium">
-                {t(language, "جاري التحليل بالذكاء الاصطناعي...", "Analyzing with AI...")}
+                {progress || t(language, "جاري التحليل بالذكاء الاصطناعي...", "Analyzing with AI...")}
               </p>
+
             </div>
           ) : (
             <div className="grid gap-3 py-2">
