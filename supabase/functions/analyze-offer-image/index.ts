@@ -172,6 +172,14 @@ Deno.serve(async (req) => {
       }
     );
 
+    // Bounded retry for transient 429 / 5xx only
+    let response = await callGateway();
+    for (let attempt = 0; attempt < 2 && (response.status === 429 || response.status >= 500); attempt++) {
+      const retryAfter = Number(response.headers.get("Retry-After"));
+      await sleep(retryAfter > 0 ? retryAfter * 1000 : 1200 * (attempt + 1));
+      response = await callGateway();
+    }
+
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
@@ -192,12 +200,35 @@ Deno.serve(async (req) => {
 
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const args = toolCall ? JSON.parse(toolCall.function.arguments) : { offers: [] };
+    let args: { offers: any[] } = { offers: [] };
+    if (toolCall) {
+      try {
+        args = JSON.parse(toolCall.function.arguments);
+      } catch (err) {
+        console.error("tool args parse failed:", err);
+        args = { offers: [] };
+      }
+    }
 
-    return new Response(JSON.stringify(args), {
+    // Server-side clean-up: drop empty names, dedupe by code+name
+    const seen = new Set<string>();
+    const offers = (Array.isArray(args.offers) ? args.offers : []).filter((o: any) => {
+      const name = String(o?.productName || "").replace(/\s+/g, " ").trim();
+      if (!name) return false;
+      o.productName = name;
+      const key = `${String(o?.itemCode || "").trim()}|${name.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    console.log(`analyze-offer-image: returned ${offers.length} offers`);
+
+    return new Response(JSON.stringify({ offers }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e) {
     console.error("analyze-offer-image error:", e);
     return new Response(
