@@ -324,7 +324,7 @@ export function AiOfferScanner({ language, onOffersDetected }: Props) {
       </Button>
 
       <input ref={cameraRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e, "image")} />
-      <input ref={galleryRef} type="file" accept="image/*" hidden onChange={(e) => onFile(e, "image")} />
+      <input ref={galleryRef} type="file" accept="image/*" multiple hidden onChange={(e) => onFile(e, "image")} />
       <input ref={excelRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => onFile(e, "excel")} />
 
       <Dialog open={open} onOpenChange={(o) => !loading && setOpen(o)}>
